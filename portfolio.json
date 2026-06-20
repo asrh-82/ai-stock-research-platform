@@ -1,0 +1,12 @@
+[
+    {
+        "ticker": "AMZN",
+        "shares": 4.09182045,
+        "avg_cost": 244.39
+    },
+    {
+        "ticker": "CMG",
+        "shares": 184.67220684,
+        "avg_cost": 32.49
+    }
+]
