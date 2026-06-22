@@ -1,12 +1,7 @@
 [
     {
-        "ticker": "AMZN",
-        "shares": 4.09182045,
-        "avg_cost": 244.39
-    },
-    {
-        "ticker": "CMG",
-        "shares": 184.67220684,
-        "avg_cost": 32.49
+        "ticker": "SPCX",
+        "shares": 5.40540541,
+        "avg_cost": 185.0
     }
 ]
