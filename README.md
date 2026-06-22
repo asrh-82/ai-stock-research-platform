@@ -1,537 +1,126 @@
-AI Stock Research Platform 
+# AI Stock Research Platform
+
+A Streamlit-based market research dashboard for stock analysis, peer comparison, watchlist management, and portfolio tracking.
+
+## Features
+
+- Company and ticker search
+- Live market data through yfinance
+- Interactive price charts
+- Rule-based stock research scoring
+- Fundamental analysis dashboard
+- Risk metrics including volatility, max drawdown, and Sharpe ratio
+- Multi-stock comparison
+- Persistent watchlist management
+- Persistent portfolio tracking
+- Portfolio gain/loss analysis
+- Portfolio allocation and sector exposure
+
+## Tech Stack
+
+- Python
+- Streamlit
+- yfinance
+- pandas
+- numpy
+- plotly
+- uv
+
+## Project Structure
+
+```text
+ai-stock-research-platform/
+├── app.py
+├── README.md
+├── pyproject.toml
+├── uv.lock
+│
+├── Utils/
+│   ├── __init__.py
+│   ├── data_utils.py
+│   ├── portfolio_utils.py
+│   ├── scoring.py
+│   └── ui_sections.py
+│
+└── Data/
+    ├── portfolio.json
+    └── watchlist.json
+```
+
+## Running the App
+
+```bash
+uv run streamlit run app.py
+```
+
+## File Responsibilities
+
+### app.py
+
+- Application entry point
+- Streamlit initialization
+- Tab routing
+- High-level application flow
+
+### Utils/data_utils.py
+
+- Company search
+- Market data retrieval
+- Price history retrieval
+- Financial statement retrieval
+- Earnings and recommendation retrieval
+- Comparison dataset generation
+
+### Utils/portfolio_utils.py
+
+- Portfolio persistence
+- Watchlist persistence
+- Portfolio calculations
+- Portfolio summaries
+- Portfolio highlights
+- Portfolio and watchlist CRUD operations
+
+### Utils/scoring.py
+
+- Return calculations
+- Volatility calculations
+- Maximum drawdown calculations
+- Sharpe ratio calculations
+- Revenue growth calculations
+- Research score generation
+
+### Utils/ui_sections.py
+
+- Styling
+- Session state initialization
+- Dashboard rendering
+- Analysis rendering
+- Comparison rendering
+- Watchlist rendering
+- Portfolio rendering
+
+## Roadmap
 
-A Bloomberg-lite stock research dashboard built using Python, Streamlit, and Yahoo Finance data. 
+### Completed
 
-The goal of this project is to learn: 
+- Stock research dashboard
+- Company search
+- Watchlist management
+- Portfolio tracking
+- Company comparison tools
+- Research scoring system
+- Modular codebase refactor
 
-Python 
+### Planned
 
-Streamlit 
+- Portfolio benchmarking
+- DCF valuation model
+- Enhanced analytics
+- Earnings calendar
+- AI-generated research summaries
 
-Financial analysis 
+## Disclaimer
 
-Data visualization 
+This project is for educational purposes only.
 
-API integration 
-
-Portfolio analytics 
-
-AI-powered stock research 
-
- 
-
-Features 
-
-Company Analysis 
-
-View detailed company information: 
-
-Company Name 
-
-Sector 
-
-Industry 
-
-Website 
-
-Business Summary 
-
- 
-
-Fundamental Metrics 
-
-Analyze important valuation and financial metrics: 
-
-Market Capitalization 
-
-Enterprise Value 
-
-Revenue 
-
-Gross Margin 
-
-Operating Margin 
-
-Profit Margin 
-
-Return on Equity (ROE) 
-
-Return on Assets (ROA) 
-
-Debt-to-Equity Ratio 
-
-Current Ratio 
-
-Trailing P/E 
-
-Forward P/E 
-
-PEG Ratio 
-
-Price-to-Book Ratio 
-
-Dividend Yield 
-
- 
-
-Price Analysis 
-
-Interactive stock chart: 
-
-Historical prices 
-
-Returns analysis 
-
-Trend visualization 
-
-Supported periods: 
-
-1 Month 
-
-3 Months 
-
-6 Months 
-
-1 Year 
-
-2 Years 
-
-5 Years 
-
- 
-
-Risk Analysis 
-
-Calculate key risk metrics: 
-
-Volatility 
-
-Measures stock price fluctuations. 
-
-Formula: 
-
-Annualized Volatility = Daily Std Dev × √252 
-
- 
-
-Maximum Drawdown 
-
-Largest historical decline from peak. 
-
-Formula: 
-
-(Current Price - Peak Price) / Peak Price 
-
- 
-
-Sharpe Ratio 
-
-Measures return relative to risk. 
-
-Formula: 
-
-(Return - Risk Free Rate) / Volatility 
-
- 
-
-Beta 
-
-Measures market sensitivity. 
-
-Interpretation: 
-
-Beta > 1 → More volatile than market 
-
-Beta < 1 → Less volatile than market 
-
-Beta = 1 → Similar to market 
-
- 
-
-Watchlist 
-
-Maintain personal watchlists: 
-
-Add stocks 
-
-Remove stocks 
-
-Monitor multiple companies 
-
-Persist locally 
-
- 
-
-Technology Stack 
-
-Frontend 
-
-Streamlit 
-
-Backend 
-
-Python 
-
-Data Source 
-
-Yahoo Finance (yfinance) 
-
-Data Processing 
-
-Pandas 
-
-NumPy 
-
-Visualization 
-
-Plotly 
-
- 
-
-Project Structure 
-
-ai-stock-research-platform/ 
-│ 
-├── app.py 
-├── watchlist.json 
-├── requirements.txt 
-├── README.md 
-│ 
-├── services/ 
-│   ├── stock_service.py 
-│   ├── risk_service.py 
-│   └── fundamental_service.py 
-│ 
-├── utils/ 
-│   ├── calculations.py 
-│   └── charts.py 
-│ 
-└── tests/ 
-    ├── test_risk.py 
-    └── test_fundamentals.py 
-
- 
-
-Installation 
-
-Clone Repository 
-
-git clone <repo-url> 
-cd ai-stock-research-platform 
-
- 
-
-Create Virtual Environment 
-
-Using UV (Recommended) 
-
-uv init 
-uv venv 
-
-Activate: 
-
-Windows 
-
-.\.venv\Scripts\Activate.ps1 
-
-Linux / Mac 
-
-source .venv/bin/activate 
-
- 
-
-Install Dependencies 
-
-Using UV: 
-
-uv add streamlit yfinance pandas numpy plotly 
-
-Or using pip: 
-
-pip install -r requirements.txt 
-
- 
-
-Running Application 
-
-streamlit run app.py 
-
-Or: 
-
-uv run streamlit run app.py 
-
- 
-
-Example Tickers 
-
-Large Cap: 
-
-AAPL 
-
-MSFT 
-
-NVDA 
-
-AMZN 
-
-GOOGL 
-
-Financials: 
-
-JPM 
-
-BAC 
-
-GS 
-
-Healthcare: 
-
-UNH 
-
-LLY 
-
-JNJ 
-
-Energy: 
-
-XOM 
-
-CVX 
-
-ETFs: 
-
-SPY 
-
-QQQ 
-
-VOO 
-
- 
-
-Financial Metrics Guide 
-
-P/E Ratio 
-
-Price investors pay for each dollar of earnings. 
-
-Lower can indicate: 
-
-Undervalued company 
-
-Slower growth 
-
-Higher can indicate: 
-
-Growth expectations 
-
-Overvaluation 
-
- 
-
-Forward P/E 
-
-Uses future expected earnings. 
-
-Formula: 
-
-Price / Expected EPS 
-
-Generally more useful than trailing P/E. 
-
- 
-
-PEG Ratio 
-
-Valuation adjusted for growth. 
-
-Formula: 
-
-P/E ÷ Earnings Growth Rate 
-
-Interpretation: 
-
-Below 1 = Attractive 
-
-Around 1 = Fairly valued 
-
-Above 2 = Expensive 
-
- 
-
-Return on Equity (ROE) 
-
-Measures management efficiency. 
-
-Formula: 
-
-Net Income / Shareholder Equity 
-
-Good ROE: 
-
-Above 15% 
-
-Excellent ROE: 
-
-Above 20% 
-
- 
-
-Debt-to-Equity 
-
-Measures leverage. 
-
-Formula: 
-
-Total Debt / Shareholder Equity 
-
-Lower is generally safer. 
-
- 
-
-Roadmap 
-
-Phase 1 
-
-Completed 
-
-Company Analysis 
-
-Fundamentals 
-
-Price Charts 
-
-Risk Metrics 
-
-Watchlist 
-
- 
-
-Phase 2 
-
-Upcoming 
-
-Earnings Summary 
-
-Revenue Growth 
-
-EPS Growth 
-
-AI Research Summary 
-
-Buy/Hold/Avoid Score 
-
- 
-
-Phase 3 
-
-Upcoming 
-
-Multi-Stock Comparison 
-
-Peer Analysis 
-
-Relative Valuation 
-
-Industry Rankings 
-
- 
-
-Phase 4 
-
-Upcoming 
-
-Portfolio Tracking 
-
-Portfolio Risk 
-
-Portfolio Returns 
-
-Diversification Analysis 
-
- 
-
-Phase 5 
-
-Upcoming 
-
-News Aggregation 
-
-Earnings Call Summaries 
-
-SEC Filings Analysis 
-
-Insider Trading Analysis 
-
- 
-
-Phase 6 
-
-Upcoming 
-
-AI Research Agent 
-
-LLM-Powered Stock Reports 
-
-Investment Thesis Generator 
-
-Risk Narrative Generation 
-
- 
-
-Future Enhancements 
-
-FastAPI Backend 
-
-PostgreSQL Database 
-
-Authentication 
-
-Docker Deployment 
-
-CI/CD Pipeline 
-
-Cloud Deployment 
-
-Redis Caching 
-
-Portfolio Optimization 
-
-Quantitative Screening 
-
-Technical Indicators 
-
-Machine Learning Models 
-
-Agentic AI Research Assistant 
-
- 
-
-Learning Outcomes 
-
-By building this project you will gain hands-on experience with: 
-
-Python 
-
-Streamlit 
-
-Financial Analysis 
-
-APIs 
-
-Data Engineering 
-
-Risk Analytics 
-
-Portfolio Management 
-
-Software Architecture 
-
-AI Applications in Finance 
-
- 
-
-Disclaimer 
-
-This project is for educational purposes only. 
-
-Nothing in this application constitutes financial or investment advice. 
+Nothing in this application constitutes financial or investment advice.
