@@ -3,5 +3,15 @@
         "ticker": "SPCX",
         "shares": 5.40540541,
         "avg_cost": 185.0
+    },
+    {
+        "ticker": "AAPL",
+        "shares": 6.7,
+        "avg_cost": 100.0
+    },
+    {
+        "ticker": "CMG",
+        "shares": 6.7,
+        "avg_cost": 30.54
     }
 ]
