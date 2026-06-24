@@ -4,7 +4,7 @@ A stock research platform built with Python, Streamlit, and Yahoo Finance data.
 
 The application combines company research, portfolio tracking, watchlist management, stock comparison tools, and custom research scoring in a single dashboard.
 
-Built to explore financial analysis, valuation, portfolio analytics, and software engineering through a practical investing-focused project.
+Built to explore financial analysis, portfolio analytics, and software engineering through a practical investing-focused project.
 
 ## Screenshots
 
@@ -18,13 +18,9 @@ Built to explore financial analysis, valuation, portfolio analytics, and softwar
 
 ![Analysis 2](screenshots/analysis2.png)
 
-![Analysis 3](screenshots/analysis3.png)
-
 ### Portfolio
 
 ![Portfolio 1](screenshots/portfolio1.png)
-
-![Portfolio 2](screenshots/portfolio2.png)
 
 ## Features
 
@@ -35,8 +31,8 @@ Built to explore financial analysis, valuation, portfolio analytics, and softwar
 - Sector and industry data
 - Market capitalization
 - Revenue and profitability metrics
-- Valuation metrics
 - Earnings and recommendation data
+- Historical market data
 
 ### Market Analysis
 
@@ -125,20 +121,13 @@ ai-stock-research-platform/
 │   ├── data_utils.py
 │   ├── portfolio_utils.py
 │   ├── scoring.py
-│   ├── ui_sections.py
-│   └── valuation/
+│   └── ui_sections.py
 │
 ├── Data/
 │   ├── portfolio.json
 │   └── watchlist.json
 │
 ├── screenshots/
-│   ├── dashboard.png
-│   ├── analysis1.png
-│   ├── analysis2.png
-│   ├── analysis3.png
-│   ├── portfolio1.png
-│   └── portfolio2.png
 │
 ├── pyproject.toml
 ├── uv.lock
@@ -199,7 +188,7 @@ Recently completed:
 
 Currently working on:
 
-- Valuation tools
+- Valuation module
 - Discounted cash flow analysis
 - Comparable company analysis
 - Fair value estimation
