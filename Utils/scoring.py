@@ -109,10 +109,10 @@ def calculate_score(info, volatility, max_drawdown, sharpe_ratio, revenue_growth
             score += 5
 
     if sharpe_ratio is not None:
-    if sharpe_ratio > 1:
-        score += 10
-    elif sharpe_ratio > 0:
-        score += 5
+        if sharpe_ratio > 1:
+            score += 10
+        elif sharpe_ratio > 0:
+            score += 5
 
     return min(score, 100)
 
