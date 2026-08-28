@@ -1,3 +1,5 @@
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
@@ -57,15 +59,126 @@ def _format_sensitivity_value(value):
     return f"${value:,.2f}"
 
 
+def _format_currency(value, decimals=2):
+    value = float(value)
+    sign = "-" if value < 0 else ""
+    return f"{sign}${abs(value):,.{decimals}f}"
+
+
+def _render_implied_price_hero(ticker, result, current_price):
+    market_difference = None
+    if current_price and current_price > 0:
+        market_difference = (result.implied_value_per_share / current_price - 1) * 100
+
+    if market_difference is None:
+        comparison_text = "Current-market comparison unavailable"
+        comparison_class = "neutral"
+    else:
+        comparison_text = f"{market_difference:+.1f}% model gap vs current market price"
+        comparison_class = "positive" if market_difference >= 0 else "negative"
+
+    st.markdown(
+        """
+        <style>
+        .dcf-value-hero {
+            padding: 1.6rem 1.8rem;
+            margin: 0.5rem 0 1rem 0;
+            border: 1px solid #2563eb;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0b1730 0%, #111827 60%, #0f2447 100%);
+            box-shadow: 0 16px 48px rgba(37, 99, 235, 0.18);
+        }
+
+        .dcf-value-eyebrow {
+            color: #93c5fd;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .dcf-value-label {
+            color: #cbd5e1;
+            font-size: 1rem;
+            margin-top: 0.65rem;
+        }
+
+        .dcf-value-price {
+            color: #f8fafc;
+            font-size: clamp(3rem, 8vw, 5.25rem);
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            line-height: 1;
+            margin: 0.3rem 0 0.7rem 0;
+        }
+
+        .dcf-value-comparison {
+            display: inline-block;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 650;
+        }
+
+        .dcf-value-comparison.positive {
+            color: #bbf7d0;
+            background: rgba(22, 101, 52, 0.35);
+            border: 1px solid #166534;
+        }
+
+        .dcf-value-comparison.negative {
+            color: #fed7aa;
+            background: rgba(154, 52, 18, 0.3);
+            border: 1px solid #9a3412;
+        }
+
+        .dcf-value-comparison.neutral {
+            color: #cbd5e1;
+            background: rgba(51, 65, 85, 0.45);
+            border: 1px solid #475569;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <div class="dcf-value-hero">
+            <div class="dcf-value-eyebrow">Base-case DCF · {escape(str(ticker))}</div>
+            <div class="dcf-value-label">Implied value per share</div>
+            <div class="dcf-value-price">{_format_currency(result.implied_value_per_share)}</div>
+            <div class="dcf-value-comparison {comparison_class}">{comparison_text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    terminal_share = (
+        result.present_value_terminal / result.enterprise_value * 100
+        if result.enterprise_value
+        else 0
+    )
+    metric1, metric2, metric3, metric4 = st.columns(4)
+    metric1.metric(
+        "Current Market Price",
+        _format_currency(current_price) if current_price else "N/A",
+    )
+    metric2.metric("Enterprise Value", f"{_format_currency(result.enterprise_value, 1)}M")
+    metric3.metric("Equity Value", f"{_format_currency(result.equity_value, 1)}M")
+    metric4.metric("Terminal Value / EV", f"{terminal_share:.1f}%")
+    st.caption(
+        "Automatically generated from the latest available company data and model defaults. "
+        "This is a research-model output, not a price target or recommendation."
+    )
+
+
 def render_dcf(context):
     ticker = context["ticker"]
     info = context["info"]
     current_price = context["current_price"]
 
     st.subheader("Discounted Cash Flow Valuation")
-    st.caption(
-        "Editable five-year unlevered free-cash-flow model. All figures are annual and in USD millions unless stated otherwise."
-    )
+    st.caption("Automatic five-year DCF. No assumptions need to be entered to generate the base case.")
 
     if _is_financial_company(info):
         st.warning(
@@ -83,116 +196,140 @@ def render_dcf(context):
         balance_sheet=balance_sheet,
     )
 
-    if defaults.warnings:
-        with st.expander("Input warnings — review before using the valuation", expanded=True):
-            for warning in defaults.warnings:
-                st.warning(warning)
+    result_section = st.container()
+    quality_section = st.container()
+    critical_inputs_missing = defaults.base_revenue <= 0 or defaults.diluted_shares <= 0
 
-    st.markdown("#### Forecast assumptions")
-    forecast_editor = pd.DataFrame(
-        {
-            "Year": [1, 2, 3, 4, 5],
-            "Revenue Growth %": [value * 100 for value in defaults.revenue_growth],
-            "EBIT Margin %": [value * 100 for value in defaults.ebit_margin],
-        }
-    )
-    edited_forecast = st.data_editor(
-        forecast_editor,
-        hide_index=True,
-        width="stretch",
-        num_rows="fixed",
-        disabled=["Year"],
-        key=f"dcf_forecast_assumptions_{ticker}",
-        column_config={
-            "Year": st.column_config.NumberColumn(format="Year %d"),
-            "Revenue Growth %": st.column_config.NumberColumn(format="%.2f%%"),
-            "EBIT Margin %": st.column_config.NumberColumn(format="%.2f%%"),
-        },
-    )
+    with st.expander(
+        "Adjust assumptions (optional)",
+        expanded=critical_inputs_missing,
+    ):
+        st.info(
+            "The model is already filled in. Change these only when you want to override the automatic base case."
+        )
 
-    operating_col, reinvestment_col, capital_col = st.columns(3)
-    with operating_col:
-        st.markdown("##### Operating")
-        base_revenue = _amount_input(
-            "Base Revenue ($M)",
-            defaults.base_revenue / 1_000_000,
+        st.markdown("##### Revenue growth and EBIT margin")
+        forecast_editor = pd.DataFrame(
+            {
+                "Year": [1, 2, 3, 4, 5],
+                "Revenue Growth %": [value * 100 for value in defaults.revenue_growth],
+                "EBIT Margin %": [value * 100 for value in defaults.ebit_margin],
+            }
+        )
+        edited_forecast = st.data_editor(
+            forecast_editor,
+            hide_index=True,
+            width="stretch",
+            num_rows="fixed",
+            disabled=["Year"],
+            key=f"dcf_forecast_assumptions_{ticker}",
+            column_config={
+                "Year": st.column_config.NumberColumn(format="Year %d"),
+                "Revenue Growth %": st.column_config.NumberColumn(format="%.2f%%"),
+                "EBIT Margin %": st.column_config.NumberColumn(format="%.2f%%"),
+            },
+        )
+
+        operating_col, reinvestment_col, capital_col = st.columns(3)
+        with operating_col:
+            st.markdown("##### Company data")
+            base_revenue = _amount_input(
+                "Base Revenue ($M)",
+                defaults.base_revenue / 1_000_000,
+                f"dcf_base_revenue_{ticker}",
+            )
+            cash = _amount_input(
+                "Cash ($M)",
+                defaults.cash / 1_000_000,
+                f"dcf_cash_{ticker}",
+            )
+            debt = _amount_input(
+                "Debt ($M)",
+                defaults.debt / 1_000_000,
+                f"dcf_debt_{ticker}",
+            )
+            diluted_shares = _amount_input(
+                "Diluted Shares ($M)",
+                defaults.diluted_shares / 1_000_000,
+                f"dcf_diluted_shares_{ticker}",
+                "Use fully diluted shares outstanding, expressed in millions.",
+            )
+
+        with reinvestment_col:
+            st.markdown("##### Operating and reinvestment")
+            tax_rate = st.number_input(
+                "Effective Tax Rate (%)",
+                min_value=0.0,
+                max_value=60.0,
+                value=float(defaults.tax_rate * 100),
+                step=0.25,
+                key=f"dcf_tax_rate_{ticker}",
+            )
+            depreciation_ratio = st.number_input(
+                "D&A / Revenue (%)",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(defaults.depreciation_pct_revenue * 100),
+                step=0.25,
+                key=f"dcf_depreciation_{ticker}",
+            )
+            capex_ratio = st.number_input(
+                "CapEx / Revenue (%)",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(defaults.capex_pct_revenue * 100),
+                step=0.25,
+                key=f"dcf_capex_{ticker}",
+            )
+            nwc_ratio = st.number_input(
+                "NWC / Incremental Revenue (%)",
+                min_value=-100.0,
+                max_value=100.0,
+                value=float(defaults.nwc_pct_incremental_revenue * 100),
+                step=0.25,
+                key=f"dcf_nwc_{ticker}",
+            )
+
+        with capital_col:
+            st.markdown("##### Discount and terminal value")
+            wacc = st.number_input(
+                "WACC (%)",
+                min_value=0.01,
+                max_value=99.99,
+                value=float(defaults.wacc * 100),
+                step=0.25,
+                key=f"dcf_wacc_{ticker}",
+            )
+            terminal_growth = st.number_input(
+                "Terminal Growth (%)",
+                min_value=-9.99,
+                max_value=9.99,
+                value=float(defaults.terminal_growth * 100),
+                step=0.25,
+                key=f"dcf_terminal_growth_{ticker}",
+            )
+
+        reset_keys = (
+            f"dcf_forecast_assumptions_{ticker}",
             f"dcf_base_revenue_{ticker}",
-        )
-        tax_rate = st.number_input(
-            "Effective Tax Rate (%)",
-            min_value=0.0,
-            max_value=60.0,
-            value=float(defaults.tax_rate * 100),
-            step=0.25,
-            key=f"dcf_tax_rate_{ticker}",
-        )
-
-    with reinvestment_col:
-        st.markdown("##### Reinvestment")
-        depreciation_ratio = st.number_input(
-            "D&A / Revenue (%)",
-            min_value=0.0,
-            max_value=100.0,
-            value=float(defaults.depreciation_pct_revenue * 100),
-            step=0.25,
-            key=f"dcf_depreciation_{ticker}",
-        )
-        capex_ratio = st.number_input(
-            "CapEx / Revenue (%)",
-            min_value=0.0,
-            max_value=100.0,
-            value=float(defaults.capex_pct_revenue * 100),
-            step=0.25,
-            key=f"dcf_capex_{ticker}",
-        )
-        nwc_ratio = st.number_input(
-            "NWC Investment / Incremental Revenue (%)",
-            min_value=-100.0,
-            max_value=100.0,
-            value=float(defaults.nwc_pct_incremental_revenue * 100),
-            step=0.25,
-            key=f"dcf_nwc_{ticker}",
-        )
-
-    with capital_col:
-        st.markdown("##### Capital and terminal value")
-        wacc = st.number_input(
-            "WACC (%)",
-            min_value=0.01,
-            max_value=99.99,
-            value=float(defaults.wacc * 100),
-            step=0.25,
-            key=f"dcf_wacc_{ticker}",
-        )
-        terminal_growth = st.number_input(
-            "Terminal Growth (%)",
-            min_value=-9.99,
-            max_value=9.99,
-            value=float(defaults.terminal_growth * 100),
-            step=0.25,
-            key=f"dcf_terminal_growth_{ticker}",
-        )
-
-    bridge_col1, bridge_col2, bridge_col3 = st.columns(3)
-    with bridge_col1:
-        cash = _amount_input(
-            "Cash and Short-Term Investments ($M)",
-            defaults.cash / 1_000_000,
             f"dcf_cash_{ticker}",
-        )
-    with bridge_col2:
-        debt = _amount_input(
-            "Total Debt ($M)",
-            defaults.debt / 1_000_000,
             f"dcf_debt_{ticker}",
-        )
-    with bridge_col3:
-        diluted_shares = _amount_input(
-            "Diluted Shares ($M)",
-            defaults.diluted_shares / 1_000_000,
             f"dcf_diluted_shares_{ticker}",
-            "Use fully diluted shares outstanding, expressed in millions.",
+            f"dcf_tax_rate_{ticker}",
+            f"dcf_depreciation_{ticker}",
+            f"dcf_capex_{ticker}",
+            f"dcf_nwc_{ticker}",
+            f"dcf_wacc_{ticker}",
+            f"dcf_terminal_growth_{ticker}",
         )
+        if st.button(
+            "Reset to automatic assumptions",
+            key=f"dcf_reset_assumptions_{ticker}",
+            width="stretch",
+        ):
+            for key in reset_keys:
+                st.session_state.pop(key, None)
+            st.rerun()
 
     try:
         revenue_growth = tuple(
@@ -217,52 +354,59 @@ def render_dcf(context):
         )
         base_result = calculate_dcf(base_inputs)
     except (TypeError, ValueError) as error:
-        st.error(str(error))
+        with result_section:
+            st.error(f"The automatic valuation could not be generated: {error}")
+        with quality_section:
+            if defaults.warnings:
+                with st.expander(
+                    f"Data quality notes ({len(defaults.warnings)})",
+                    expanded=True,
+                ):
+                    for warning in defaults.warnings:
+                        st.warning(warning)
         return
 
-    st.divider()
-    st.markdown("#### Base-case output")
-    market_difference = None
-    if current_price and current_price > 0:
-        market_difference = (base_result.implied_value_per_share / current_price - 1) * 100
+    with result_section:
+        _render_implied_price_hero(ticker, base_result, current_price)
 
-    metric1, metric2, metric3, metric4, metric5 = st.columns(5)
-    metric1.metric("Enterprise Value", f"${base_result.enterprise_value:,.1f}M")
-    metric2.metric("Equity Value", f"${base_result.equity_value:,.1f}M")
-    metric3.metric(
-        "Implied Value / Share",
-        f"${base_result.implied_value_per_share:,.2f}",
-        delta=f"{market_difference:+.1f}% vs market" if market_difference is not None else None,
-    )
-    metric4.metric("Current Price", f"${current_price:,.2f}" if current_price else "N/A")
-    terminal_share = (
-        base_result.present_value_terminal / base_result.enterprise_value * 100
-        if base_result.enterprise_value
-        else 0
-    )
-    metric5.metric("Terminal Value / EV", f"{terminal_share:.1f}%")
+    with quality_section:
+        if defaults.warnings:
+            with st.expander(
+                f"Data quality notes ({len(defaults.warnings)})",
+                expanded=critical_inputs_missing,
+            ):
+                for warning in defaults.warnings:
+                    st.warning(warning)
 
     forecast_df = _forecast_dataframe(base_result)
-    st.dataframe(
-        forecast_df,
-        hide_index=True,
-        width="stretch",
-        column_config={
-            "Revenue Growth %": st.column_config.NumberColumn(format="%.2f%%"),
-            "EBIT Margin %": st.column_config.NumberColumn(format="%.2f%%"),
-            "Revenue ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "EBIT ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "NOPAT ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "D&A ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "CapEx ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "Change in NWC ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "UFCF ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "PV of UFCF ($M)": st.column_config.NumberColumn(format="$%.1f"),
-        },
-    )
+    st.markdown("#### Model details")
+    with st.expander("Forecast cash flows"):
+        st.dataframe(
+            forecast_df,
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "Revenue Growth %": st.column_config.NumberColumn(format="%.2f%%"),
+                "EBIT Margin %": st.column_config.NumberColumn(format="%.2f%%"),
+                "Revenue ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "EBIT ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "NOPAT ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "D&A ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "CapEx ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "Change in NWC ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "UFCF ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "PV of UFCF ($M)": st.column_config.NumberColumn(format="$%.1f"),
+            },
+        )
+        st.download_button(
+            "Download Base-Case Forecast CSV",
+            data=forecast_df.to_csv(index=False).encode("utf-8"),
+            file_name=f"{ticker}_dcf_forecast.csv",
+            mime="text/csv",
+            width="stretch",
+        )
 
-    st.markdown("#### Scenario analysis")
-    scenario_editor = pd.DataFrame(
+    scenario_assumptions = pd.DataFrame(
         {
             "Scenario": ["Bear", "Base", "Bull"],
             "Growth Adjustment (pp)": [-2.0, 0.0, 2.0],
@@ -270,22 +414,8 @@ def render_dcf(context):
             "WACC Adjustment (pp)": [1.0, 0.0, -1.0],
         }
     )
-    edited_scenarios = st.data_editor(
-        scenario_editor,
-        hide_index=True,
-        width="stretch",
-        num_rows="fixed",
-        disabled=["Scenario"],
-        key=f"dcf_scenarios_{ticker}",
-        column_config={
-            "Growth Adjustment (pp)": st.column_config.NumberColumn(format="%+.2f"),
-            "Margin Adjustment (pp)": st.column_config.NumberColumn(format="%+.2f"),
-            "WACC Adjustment (pp)": st.column_config.NumberColumn(format="%+.2f"),
-        },
-    )
-
     scenario_rows = []
-    for _, row in edited_scenarios.iterrows():
+    for _, row in scenario_assumptions.iterrows():
         try:
             scenario_inputs = apply_scenario_adjustments(
                 base_inputs,
@@ -320,19 +450,22 @@ def render_dcf(context):
                 }
             )
 
-    st.dataframe(
-        pd.DataFrame(scenario_rows),
-        hide_index=True,
-        width="stretch",
-        column_config={
-            "Implied Value / Share": st.column_config.NumberColumn(format="$%.2f"),
-            "Difference vs Market %": st.column_config.NumberColumn(format="%+.1f%%"),
-            "Enterprise Value ($M)": st.column_config.NumberColumn(format="$%.1f"),
-            "Equity Value ($M)": st.column_config.NumberColumn(format="$%.1f"),
-        },
-    )
+    with st.expander("Automatic bear, base, and bull range"):
+        st.caption(
+            "These scenarios are generated automatically using ±2 percentage points for growth and margin and ∓1 percentage point for WACC."
+        )
+        st.dataframe(
+            pd.DataFrame(scenario_rows),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "Implied Value / Share": st.column_config.NumberColumn(format="$%.2f"),
+                "Difference vs Market %": st.column_config.NumberColumn(format="%+.1f%%"),
+                "Enterprise Value ($M)": st.column_config.NumberColumn(format="$%.1f"),
+                "Equity Value ($M)": st.column_config.NumberColumn(format="$%.1f"),
+            },
+        )
 
-    st.markdown("#### WACC / terminal-growth sensitivity")
     wacc_values = tuple(
         max(base_inputs.wacc + adjustment, 0.0001)
         for adjustment in (-0.02, -0.01, -0.005, 0, 0.005, 0.01, 0.02)
@@ -354,7 +487,8 @@ def render_dcf(context):
     formatted_sensitivity = sensitivity_df.apply(
         lambda column: column.map(_format_sensitivity_value)
     )
-    st.dataframe(formatted_sensitivity, width="stretch")
+    with st.expander("WACC / terminal-growth sensitivity"):
+        st.dataframe(formatted_sensitivity, width="stretch")
 
     with st.expander("Input sources and methodology"):
         st.dataframe(
@@ -372,11 +506,4 @@ def render_dcf(context):
             "Terminal value uses the perpetuity-growth method. Cash is added and debt is subtracted to bridge from enterprise value to equity value."
         )
 
-    st.download_button(
-        "Download Base-Case Forecast CSV",
-        data=forecast_df.to_csv(index=False).encode("utf-8"),
-        file_name=f"{ticker}_dcf_forecast.csv",
-        mime="text/csv",
-        width="stretch",
-    )
     st.caption("Educational research model only. Model outputs are not investment recommendations.")
