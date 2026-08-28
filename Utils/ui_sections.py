@@ -5,7 +5,6 @@ import streamlit as st
 
 from Utils.data_utils import (
     extract_symbol_from_label,
-    fetch_live_price_from_ticker,
     format_large_number,
     get_comparison_data,
     get_earnings_dates_cached,
@@ -17,18 +16,11 @@ from Utils.data_utils import (
     make_lookup_label,
     search_company_symbols,
 )
-from Utils.portfolio_utils import (
-    add_or_update_holding,
+from Utils.watchlist_utils import (
     add_to_watchlist,
     build_watchlist_df,
-    calculate_portfolio_data,
-    calculate_portfolio_summary,
-    get_portfolio_highlights,
-    load_portfolio,
     load_watchlist,
     remove_from_watchlist,
-    remove_portfolio_holding,
-    save_portfolio,
 )
 from Utils.scoring import (
     calculate_max_drawdown,
@@ -77,9 +69,7 @@ h3 {
 }
 
 .section-card,
-.glass-card,
-.portfolio-panel,
-.position-preview {
+.glass-card {
     background: #111827;
     border: 1px solid #243244;
     border-radius: 10px;
@@ -114,8 +104,7 @@ h3 {
     font-size: 0.86rem;
 }
 
-.pill,
-.pill-green {
+.pill {
     display: inline-block;
     padding: 0.16rem 0.5rem;
     border-radius: 5px;
@@ -126,12 +115,6 @@ h3 {
     font-weight: 600;
     margin-right: 0.3rem;
     margin-bottom: 0.3rem;
-}
-
-.pill-green {
-    color: #bbf7d0;
-    border-color: #166534;
-    background: #052e16;
 }
 
 div[data-testid="stMetric"] {
@@ -202,11 +185,6 @@ def initialize_session_state() -> None:
         "global_lookup_query": "Apple",
         "global_lookup_results": [],
         "comparison_df": pd.DataFrame(),
-        "portfolio_lookup_query": "Apple",
-        "portfolio_lookup_results": [],
-        "portfolio_selected_symbol": "AAPL",
-        "portfolio_manual_price": 100.0,
-        "portfolio_total_price": 100.0,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -351,7 +329,7 @@ def get_active_stock_context(ticker, period):
     }
 
 
-def render_header(context, app_name="Market Research Dashboard"):
+def render_header(context, app_name="Equity Research Platform"):
     ticker = context["ticker"]
     info = context["info"]
     company_name = context["company_name"]
@@ -561,110 +539,3 @@ def render_watchlist(active_ticker):
         if st.button("Remove Selected Watchlist Stock", use_container_width=True):
             remove_from_watchlist(remove_watch_symbol)
             st.rerun()
-
-
-def render_portfolio():
-    st.subheader("Portfolio")
-    portfolio = load_portfolio()
-    portfolio_df = calculate_portfolio_data(portfolio)
-    if not portfolio_df.empty:
-        total_value, total_gain_loss, total_gain_loss_pct = calculate_portfolio_summary(portfolio_df)
-        highlights = get_portfolio_highlights(portfolio_df)
-        p1, p2, p3, p4 = st.columns(4)
-        p1.metric("Portfolio Value", f"${total_value:,.2f}")
-        p2.metric("Total Gain/Loss", f"${total_gain_loss:,.2f}")
-        p3.metric("Gain/Loss %", f"{total_gain_loss_pct}%")
-        p4.metric("Holdings", len(portfolio_df))
-        h1, h2, h3, h4 = st.columns(4)
-        h1.metric("Best Position", highlights["best"])
-        h2.metric("Worst Position", highlights["worst"])
-        h3.metric("Largest Holding", highlights["largest"])
-        h4.metric("Largest Sector", highlights["largest_sector"])
-        st.markdown('<div class="portfolio-panel">', unsafe_allow_html=True)
-        st.write("### Current Holdings")
-        st.dataframe(portfolio_df.copy(), use_container_width=True, hide_index=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        chart_col1, chart_col2 = st.columns(2)
-        with chart_col1:
-            fig_allocation = px.pie(portfolio_df, names="Ticker", values="Current Value", title="Allocation by Ticker")
-            st.plotly_chart(style_plotly_chart(fig_allocation), use_container_width=True)
-        with chart_col2:
-            sector_df = portfolio_df.groupby("Sector")["Current Value"].sum().reset_index()
-            fig_sector = px.pie(sector_df, names="Sector", values="Current Value", title="Allocation by Sector")
-            st.plotly_chart(style_plotly_chart(fig_sector), use_container_width=True)
-        fig_gain_loss = px.bar(portfolio_df, x="Ticker", y="Gain/Loss", title="Gain/Loss by Holding")
-        st.plotly_chart(style_plotly_chart(fig_gain_loss), use_container_width=True)
-        st.write("### Remove Holding")
-        remove_portfolio_symbol = st.selectbox("Select ticker to remove", portfolio_df["Ticker"].tolist(), key="portfolio_remove_select")
-        if st.button("Remove Selected Holding", use_container_width=True):
-            remove_portfolio_holding(remove_portfolio_symbol)
-            st.rerun()
-    else:
-        p1, p2, p3, p4 = st.columns(4)
-        p1.metric("Portfolio Value", "$0.00")
-        p2.metric("Total Gain/Loss", "$0.00")
-        p3.metric("Gain/Loss %", "0%")
-        p4.metric("Holdings", "0")
-        st.info("No portfolio holdings yet.")
-    st.divider()
-    with st.expander("Add Position", expanded=portfolio_df.empty):
-        lookup_left, lookup_right = st.columns([1.25, 0.75])
-        with lookup_left:
-            portfolio_lookup_query = st.text_input("Search company or ticker", value=st.session_state.portfolio_lookup_query, key="portfolio_lookup_query_input")
-        with lookup_right:
-            st.write("")
-            st.write("")
-            if st.button("Search Position", use_container_width=True):
-                st.session_state.portfolio_lookup_query = portfolio_lookup_query
-                st.session_state.portfolio_lookup_results = search_company_symbols(portfolio_lookup_query)
-                if st.session_state.portfolio_lookup_results:
-                    selected_portfolio_symbol = st.session_state.portfolio_lookup_results[0]["symbol"]
-                    st.session_state.portfolio_selected_symbol = selected_portfolio_symbol
-                    live_price_for_selected = fetch_live_price_from_ticker(selected_portfolio_symbol)
-                    st.session_state.portfolio_manual_price = live_price_for_selected if live_price_for_selected > 0 else 100.0
-                    st.session_state.portfolio_total_price = live_price_for_selected if live_price_for_selected > 0 else 100.0
-                    st.rerun()
-        if st.session_state.portfolio_lookup_results:
-            portfolio_options = [make_lookup_label(result) for result in st.session_state.portfolio_lookup_results]
-            selected_portfolio_label = st.selectbox("Search Results", portfolio_options, key="portfolio_lookup_select")
-            selected_portfolio_symbol = extract_symbol_from_label(selected_portfolio_label)
-            if selected_portfolio_symbol and selected_portfolio_symbol != st.session_state.portfolio_selected_symbol:
-                st.session_state.portfolio_selected_symbol = selected_portfolio_symbol
-                live_price_for_selected = fetch_live_price_from_ticker(selected_portfolio_symbol)
-                st.session_state.portfolio_manual_price = live_price_for_selected if live_price_for_selected > 0 else 100.0
-                st.session_state.portfolio_total_price = live_price_for_selected if live_price_for_selected > 0 else 100.0
-                st.rerun()
-        portfolio_ticker = st.session_state.portfolio_selected_symbol.strip().upper()
-        live_price = fetch_live_price_from_ticker(portfolio_ticker)
-        st.markdown(
-            f'''<div class="position-preview"><span class="pill">{portfolio_ticker}</span><span class="pill pill-green">Live Price: ${live_price:,.2f}</span></div>''',
-            unsafe_allow_html=True,
-        )
-        price_col, amount_col, shares_col = st.columns(3)
-        with price_col:
-            manual_price = st.number_input("Buy Price Per Share", min_value=0.01, value=float(st.session_state.portfolio_manual_price), step=1.0, key="portfolio_manual_price")
-        with amount_col:
-            total_price = st.number_input("Total Amount to Invest", min_value=0.0, value=float(st.session_state.portfolio_total_price), step=10.0, key="portfolio_total_price")
-        shares = total_price / manual_price if manual_price > 0 else 0.0
-        with shares_col:
-            st.metric("Shares Calculated", f"{shares:.8f}")
-            st.caption("Calculated from amount ÷ buy price.")
-        st.markdown(f'''<div class="section-card"><b>Order Preview</b><br>{portfolio_ticker}: ${total_price:,.2f} ÷ ${manual_price:,.2f} = <b>{shares:.8f} shares</b></div>''', unsafe_allow_html=True)
-        if live_price > 0 and manual_price != live_price:
-            st.info(f"Live price is ${live_price:,.2f}, but your buy price is ${manual_price:,.2f}. Shares use your buy price. Portfolio value uses live price.")
-        if st.button("Add to Portfolio", use_container_width=True):
-            if not portfolio_ticker:
-                st.warning("Search for a company first.")
-            elif manual_price <= 0:
-                st.warning("Enter a valid buy price.")
-            elif total_price <= 0:
-                st.warning("Enter an amount above 0.")
-            else:
-                portfolio = load_portfolio()
-                portfolio, did_save = add_or_update_holding(portfolio, portfolio_ticker, float(shares), float(manual_price))
-                if did_save:
-                    save_portfolio(portfolio)
-                    st.success(f"Added {shares:.8f} shares of {portfolio_ticker} at ${manual_price:,.2f}/share.")
-                    st.rerun()
-                else:
-                    st.warning("Could not add holding.")

@@ -1,10 +1,10 @@
 # AI Stock Research Platform
 
-A stock research platform built with Python, Streamlit, and Yahoo Finance data.
+A focused equity research platform built with Python, Streamlit, and market data from Yahoo Finance.
 
-The application combines company research, portfolio tracking, watchlist management, stock comparison tools, and custom research scoring in a single dashboard.
+The application combines company research, risk analysis, watchlist management, peer comparison, and custom research scoring in a single dashboard.
 
-Built to explore financial analysis, portfolio analytics, and software engineering through a practical investing-focused project.
+The product is being developed toward an end-to-end research workflow with editable DCF valuation, Monte Carlo valuation, strategy backtesting, and downloadable research reports.
 
 ## Screenshots
 
@@ -17,10 +17,6 @@ Built to explore financial analysis, portfolio analytics, and software engineeri
 ![Analysis 1](screenshots/analysis1.png)
 
 ![Analysis 2](screenshots/analysis2.png)
-
-### Portfolio
-
-![Portfolio 1](screenshots/portfolio1.png)
 
 ## Features
 
@@ -43,6 +39,17 @@ Built to explore financial analysis, portfolio analytics, and software engineeri
 - Sharpe ratio calculations
 - Revenue growth analysis
 
+### DCF Valuation
+
+- Editable five-year revenue-growth and EBIT-margin forecast
+- Unlevered free-cash-flow calculation
+- Cash and debt bridge from enterprise value to equity value
+- Implied value per diluted share
+- Editable base, bull, and bear scenarios
+- WACC and terminal-growth sensitivity analysis
+- Explicit source and fallback warnings
+- CSV forecast export
+
 ### Research Scoring
 
 The platform includes a custom rule-based scoring system that evaluates companies using:
@@ -61,15 +68,6 @@ The platform includes a custom rule-based scoring system that evaluates companie
 - Persistent local storage
 - Live pricing
 - Company tracking
-
-### Portfolio Tracking
-
-- Add and remove holdings
-- Track shares and cost basis
-- Live portfolio valuation
-- Gain/loss calculations
-- Allocation analysis
-- Sector exposure analysis
 
 ### Company Comparison
 
@@ -119,16 +117,20 @@ ai-stock-research-platform/
 │
 ├── Utils/
 │   ├── data_utils.py
-│   ├── portfolio_utils.py
+│   ├── dcf.py
+│   ├── dcf_data.py
+│   ├── dcf_ui.py
 │   ├── scoring.py
-│   └── ui_sections.py
+│   ├── ui_sections.py
+│   └── watchlist_utils.py
 │
 ├── Data/
-│   ├── portfolio.json
 │   └── watchlist.json
 │
 ├── screenshots/
 │
+├── tests/
+├── ROADMAP.md
 ├── pyproject.toml
 ├── uv.lock
 └── README.md
@@ -149,14 +151,29 @@ Application entry point and navigation.
 - Earnings and recommendation retrieval
 - Comparison dataset generation
 
-### Utils/portfolio_utils.py
+### Utils/dcf.py
 
-- Portfolio persistence
+- Pure DCF calculations and validation
+- Scenario adjustments
+- WACC and terminal-growth sensitivity calculations
+
+### Utils/dcf_data.py
+
+- Financial-statement line-item extraction
+- Normalized DCF defaults
+- Source labels and explicit fallback warnings
+
+### Utils/dcf_ui.py
+
+- Editable DCF assumptions
+- Forecast, scenario, and sensitivity rendering
+- Forecast CSV export
+
+### Utils/watchlist_utils.py
+
 - Watchlist persistence
-- Portfolio calculations
-- Portfolio summaries
-- Portfolio highlights
-- Portfolio and watchlist management
+- Watchlist add and remove operations
+- Watchlist research table generation
 
 ### Utils/scoring.py
 
@@ -173,29 +190,42 @@ Application entry point and navigation.
 - Analysis rendering
 - Comparison rendering
 - Watchlist rendering
-- Portfolio rendering
 
 ## Current Development
 
 Recently completed:
 
 - Modular codebase refactor
-- Portfolio tracking system
 - Watchlist management
 - Company comparison tools
 - Research scoring framework
 - UI cleanup and project restructuring
+- Research-only product refactor
+- Testable DCF calculation engine
+- Editable DCF valuation interface
+- Base, bull, and bear scenario analysis
+- WACC and terminal-growth sensitivity table
 
 Currently working on:
 
-- Valuation module
-- Discounted cash flow analysis
+- Stronger financial-statement normalization and source traceability
+- Historical DCF input display
+- Calculated WACC build-up with manual overrides
+- Excel model export
+
+Planned after the DCF foundation:
+
+- Monte Carlo valuation with reproducible assumptions and percentile outputs
+- Backtesting with transaction costs, benchmark comparison, and look-ahead-bias controls
 - Comparable company analysis
-- Fair value estimation
+- Excel, CSV, and PDF research exports
+- Methodology and source-traceability views
+
+See [ROADMAP.md](ROADMAP.md) for milestone scope and acceptance criteria.
 
 ## Notes
 
-This project currently uses rule-based analysis and financial metrics.
+This project currently uses rule-based analysis and financial metrics. The initial valuation scope is U.S.-listed, non-financial companies because banks and insurers require different models.
 
 No AI-generated investment recommendations are currently used within the platform.
 
