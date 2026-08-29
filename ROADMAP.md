@@ -41,6 +41,8 @@ Acceptance criteria:
 
 Run the DCF engine across distributions of key assumptions rather than creating a separate valuation model.
 
+Phase 8 status: implemented. Independent normal assumption changes are supported; correlated distributions remain future work.
+
 Acceptance criteria:
 
 - Let users define distributions for growth, margins, WACC, and terminal growth.
@@ -52,6 +54,8 @@ Acceptance criteria:
 ## Milestone 4: Backtesting Engine
 
 Start with strategies that can be tested from trustworthy historical price data, then add fundamental signals only when point-in-time fundamentals are available.
+
+Phase 8 status: the price-strategy foundation is implemented, including full-history and holdout evaluation. Walk-forward parameter evaluation remains future work.
 
 Acceptance criteria:
 

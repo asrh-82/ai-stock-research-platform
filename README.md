@@ -2,7 +2,7 @@
 
 A focused equity research platform built with Python, Streamlit, and market data from Yahoo Finance.
 
-The application combines company research, risk analysis, watchlist management, peer comparison, and custom research scoring in a single dashboard.
+The application combines company research, valuation, simulation, strategy backtesting, risk analysis, watchlist management, peer comparison, and custom research scoring in a single dashboard.
 
 The product is being developed toward an end-to-end research workflow with editable DCF valuation, Monte Carlo valuation, strategy backtesting, and downloadable research reports.
 
@@ -49,6 +49,25 @@ The product is being developed toward an end-to-end research workflow with edita
 - WACC and terminal-growth sensitivity analysis
 - Explicit source and fallback warnings
 - CSV forecast export
+
+### Monte Carlo Valuation
+
+- Reuses the deterministic DCF engine across thousands of assumption draws
+- Automatic neutral-case inputs with optional bear and bull centers
+- Configurable simulation count, random seed, and uncertainty ranges
+- Economic validation for WACC, terminal growth, growth, and margins
+- Median, mean, percentile range, and probability above current market price
+- Distribution chart and reproducible simulation CSV export
+
+### Strategy Backtesting
+
+- SMA crossover, price momentum, RSI mean reversion, and buy-and-hold rules
+- Next-period signal execution to prevent same-period look-ahead
+- Long/cash and long/short position rules
+- Daily, weekly, and monthly rebalancing
+- Transaction costs, slippage, benchmark comparison, and holdout evaluation
+- Cumulative return, CAGR, volatility, Sharpe, Sortino, maximum drawdown, turnover, exposure, and trade statistics
+- Downloadable trade ledger and daily performance series
 
 ### Research Scoring
 
@@ -117,9 +136,13 @@ ai-stock-research-platform/
 │
 ├── Utils/
 │   ├── data_utils.py
+│   ├── backtesting.py
+│   ├── backtesting_ui.py
 │   ├── dcf.py
 │   ├── dcf_data.py
 │   ├── dcf_ui.py
+│   ├── monte_carlo.py
+│   ├── monte_carlo_ui.py
 │   ├── scoring.py
 │   ├── ui_sections.py
 │   └── watchlist_utils.py
@@ -169,6 +192,30 @@ Application entry point and navigation.
 - Forecast, scenario, and sensitivity rendering
 - Forecast CSV export
 
+### Utils/monte_carlo.py
+
+- Reproducible DCF simulation engine
+- Economic draw validation
+- Valuation percentiles and market-price probability calculations
+
+### Utils/monte_carlo_ui.py
+
+- Automatic simulation setup
+- Distribution chart and summary rendering
+- Simulation CSV export
+
+### Utils/backtesting.py
+
+- Price-signal generation and next-period execution
+- Transaction-cost, slippage, and benchmark calculations
+- Performance metrics, stability analysis, and trade-ledger generation
+
+### Utils/backtesting_ui.py
+
+- Strategy and execution controls
+- Performance, drawdown, stability, and trade rendering
+- Trade-ledger and performance CSV export
+
 ### Utils/watchlist_utils.py
 
 - Watchlist persistence
@@ -205,6 +252,8 @@ Recently completed:
 - Editable DCF valuation interface
 - Base, bull, and bear scenario analysis
 - WACC and terminal-growth sensitivity table
+- Reproducible Monte Carlo DCF valuation
+- Price-strategy backtesting with explicit bias controls
 
 Currently working on:
 
@@ -212,11 +261,11 @@ Currently working on:
 - Historical DCF input display
 - Calculated WACC build-up with manual overrides
 - Excel model export
+- Correlated Monte Carlo assumptions
+- Walk-forward strategy evaluation and parameter stability
 
-Planned after the DCF foundation:
+Planned research expansion:
 
-- Monte Carlo valuation with reproducible assumptions and percentile outputs
-- Backtesting with transaction costs, benchmark comparison, and look-ahead-bias controls
 - Comparable company analysis
 - Excel, CSV, and PDF research exports
 - Methodology and source-traceability views
