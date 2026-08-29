@@ -1,7 +1,7 @@
 [project]
 name = "ai-stock-research-platform"
 version = "0.1.0"
-description = "A Streamlit-based stock research dashboard with portfolio tracking, watchlist management, peer comparison, and valuation tools."
+description = "A Streamlit-based equity research platform with company analysis, watchlists, peer comparison, and valuation tools."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

@@ -1,5 +1,6 @@
 import streamlit as st
 
+from Utils.dcf_ui import render_dcf
 from Utils.ui_sections import (
     apply_styles,
     get_active_stock_context,
@@ -8,12 +9,11 @@ from Utils.ui_sections import (
     render_compare,
     render_dashboard,
     render_header,
-    render_portfolio,
     render_sidebar,
     render_watchlist,
 )
 
-APP_NAME = "Market Research Dashboard"
+APP_NAME = "Equity Research Platform"
 
 
 st.set_page_config(
@@ -35,13 +35,13 @@ if context is None:
 
 render_header(context, APP_NAME)
 
-dashboard_tab, analysis_tab, compare_tab, watchlist_tab, portfolio_tab = st.tabs(
+dashboard_tab, analysis_tab, valuation_tab, compare_tab, watchlist_tab = st.tabs(
     [
         "Dashboard",
         "Analysis",
+        "Valuation",
         "Compare",
         "Watchlist",
-        "Portfolio",
     ]
 )
 
@@ -51,11 +51,11 @@ with dashboard_tab:
 with analysis_tab:
     render_analysis(context)
 
+with valuation_tab:
+    render_dcf(context)
+
 with compare_tab:
     render_compare(active_ticker)
 
 with watchlist_tab:
     render_watchlist(active_ticker)
-
-with portfolio_tab:
-    render_portfolio()

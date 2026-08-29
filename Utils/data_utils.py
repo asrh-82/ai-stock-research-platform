@@ -101,6 +101,22 @@ def get_financials_cached(ticker: str):
 
 
 @st.cache_data(ttl=900)
+def get_cashflow_cached(ticker: str):
+    try:
+        return yf.Ticker(ticker).cashflow
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=900)
+def get_balance_sheet_cached(ticker: str):
+    try:
+        return yf.Ticker(ticker).balance_sheet
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=900)
 def get_earnings_dates_cached(ticker: str):
     try:
         return yf.Ticker(ticker).earnings_dates
@@ -144,17 +160,6 @@ def get_live_price_from_info(ticker: str, info=None):
             pass
 
     return None
-
-
-def fetch_live_price_from_ticker(ticker: str) -> float:
-    ticker = ticker.strip().upper()
-
-    if not ticker:
-        return 0.0
-
-    price = get_live_price_from_info(ticker)
-
-    return round(float(price), 2) if price is not None else 0.0
 
 
 def format_large_number(value):
