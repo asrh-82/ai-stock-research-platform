@@ -1,6 +1,8 @@
 import streamlit as st
 
+from Utils.backtesting_ui import render_backtesting
 from Utils.dcf_ui import render_dcf
+from Utils.monte_carlo_ui import render_monte_carlo
 from Utils.ui_sections import (
     apply_styles,
     get_active_stock_context,
@@ -35,11 +37,21 @@ if context is None:
 
 render_header(context, APP_NAME)
 
-dashboard_tab, analysis_tab, valuation_tab, compare_tab, watchlist_tab = st.tabs(
+(
+    dashboard_tab,
+    analysis_tab,
+    valuation_tab,
+    monte_carlo_tab,
+    backtest_tab,
+    compare_tab,
+    watchlist_tab,
+) = st.tabs(
     [
         "Dashboard",
         "Analysis",
         "Valuation",
+        "Monte Carlo",
+        "Backtest",
         "Compare",
         "Watchlist",
     ]
@@ -53,6 +65,12 @@ with analysis_tab:
 
 with valuation_tab:
     render_dcf(context)
+
+with monte_carlo_tab:
+    render_monte_carlo(context)
+
+with backtest_tab:
+    render_backtesting(context)
 
 with compare_tab:
     render_compare(active_ticker)
