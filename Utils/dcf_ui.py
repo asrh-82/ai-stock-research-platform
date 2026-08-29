@@ -12,6 +12,27 @@ from Utils.dcf import (
 )
 from Utils.dcf_data import build_dcf_defaults
 
+SCENARIO_ADJUSTMENTS = {
+    "Bear": {
+        "growth_delta": -0.02,
+        "margin_delta": -0.02,
+        "wacc_delta": 0.01,
+        "summary": "Growth −2 pp · EBIT margin −2 pp · WACC +1 pp",
+    },
+    "Neutral": {
+        "growth_delta": 0.0,
+        "margin_delta": 0.0,
+        "wacc_delta": 0.0,
+        "summary": "Automatic company data and model defaults",
+    },
+    "Bull": {
+        "growth_delta": 0.02,
+        "margin_delta": 0.02,
+        "wacc_delta": -0.01,
+        "summary": "Growth +2 pp · EBIT margin +2 pp · WACC −1 pp",
+    },
+}
+
 
 def _is_financial_company(info: dict) -> bool:
     sector = str(info.get("sector", "")).lower()
@@ -65,7 +86,7 @@ def _format_currency(value, decimals=2):
     return f"{sign}${abs(value):,.{decimals}f}"
 
 
-def _render_implied_price_hero(ticker, result, current_price):
+def _render_implied_price_hero(ticker, result, current_price, scenario):
     market_difference = None
     if current_price and current_price > 0:
         market_difference = (result.implied_value_per_share / current_price - 1) * 100
@@ -87,6 +108,18 @@ def _render_implied_price_hero(ticker, result, current_price):
             border-radius: 16px;
             background: linear-gradient(135deg, #0b1730 0%, #111827 60%, #0f2447 100%);
             box-shadow: 0 16px 48px rgba(37, 99, 235, 0.18);
+        }
+
+        .dcf-value-hero.bear {
+            border-color: #ea580c;
+            background: linear-gradient(135deg, #2b140d 0%, #111827 60%, #32180d 100%);
+            box-shadow: 0 16px 48px rgba(234, 88, 12, 0.16);
+        }
+
+        .dcf-value-hero.bull {
+            border-color: #16a34a;
+            background: linear-gradient(135deg, #08291a 0%, #111827 60%, #0b321e 100%);
+            box-shadow: 0 16px 48px rgba(22, 163, 74, 0.16);
         }
 
         .dcf-value-eyebrow {
@@ -141,10 +174,11 @@ def _render_implied_price_hero(ticker, result, current_price):
         """,
         unsafe_allow_html=True,
     )
+    scenario_class = str(scenario).lower()
     st.markdown(
         f"""
-        <div class="dcf-value-hero">
-            <div class="dcf-value-eyebrow">Base-case DCF · {escape(str(ticker))}</div>
+        <div class="dcf-value-hero {scenario_class}">
+            <div class="dcf-value-eyebrow">{escape(str(scenario))} scenario DCF · {escape(str(ticker))}</div>
             <div class="dcf-value-label">Implied value per share</div>
             <div class="dcf-value-price">{_format_currency(result.implied_value_per_share)}</div>
             <div class="dcf-value-comparison {comparison_class}">{comparison_text}</div>
@@ -178,7 +212,7 @@ def render_dcf(context):
     current_price = context["current_price"]
 
     st.subheader("Discounted Cash Flow Valuation")
-    st.caption("Automatic five-year DCF. No assumptions need to be entered to generate the base case.")
+    st.caption("Automatic five-year DCF. Pick an outlook; no assumptions need to be entered.")
 
     if _is_financial_company(info):
         st.warning(
@@ -196,6 +230,18 @@ def render_dcf(context):
         balance_sheet=balance_sheet,
     )
 
+    st.markdown("#### Valuation scenario")
+    selected_scenario = st.select_slider(
+        "Scenario outlook",
+        options=tuple(SCENARIO_ADJUSTMENTS),
+        value="Neutral",
+        key=f"dcf_selected_scenario_{ticker}",
+        label_visibility="collapsed",
+        help="Moves the full DCF between consistent automatic bear, neutral, and bull assumptions.",
+    )
+    selected_adjustments = SCENARIO_ADJUSTMENTS[selected_scenario]
+    st.caption(selected_adjustments["summary"])
+
     result_section = st.container()
     quality_section = st.container()
     critical_inputs_missing = defaults.base_revenue <= 0 or defaults.diluted_shares <= 0
@@ -205,7 +251,7 @@ def render_dcf(context):
         expanded=critical_inputs_missing,
     ):
         st.info(
-            "The model is already filled in. Change these only when you want to override the automatic base case."
+            "The neutral model is already filled in. Change these only when you want to override its automatic assumptions."
         )
 
         st.markdown("##### Revenue growth and EBIT margin")
@@ -310,6 +356,7 @@ def render_dcf(context):
             )
 
         reset_keys = (
+            f"dcf_selected_scenario_{ticker}",
             f"dcf_forecast_assumptions_{ticker}",
             f"dcf_base_revenue_{ticker}",
             f"dcf_cash_{ticker}",
@@ -352,7 +399,13 @@ def render_dcf(context):
             debt=float(debt),
             diluted_shares=float(diluted_shares),
         )
-        base_result = calculate_dcf(base_inputs)
+        selected_inputs = apply_scenario_adjustments(
+            base_inputs,
+            growth_delta=selected_adjustments["growth_delta"],
+            margin_delta=selected_adjustments["margin_delta"],
+            wacc_delta=selected_adjustments["wacc_delta"],
+        )
+        selected_result = calculate_dcf(selected_inputs)
     except (TypeError, ValueError) as error:
         with result_section:
             st.error(f"The automatic valuation could not be generated: {error}")
@@ -367,7 +420,12 @@ def render_dcf(context):
         return
 
     with result_section:
-        _render_implied_price_hero(ticker, base_result, current_price)
+        _render_implied_price_hero(
+            ticker,
+            selected_result,
+            current_price,
+            selected_scenario,
+        )
 
     with quality_section:
         if defaults.warnings:
@@ -378,8 +436,8 @@ def render_dcf(context):
                 for warning in defaults.warnings:
                     st.warning(warning)
 
-    forecast_df = _forecast_dataframe(base_result)
-    st.markdown("#### Model details")
+    forecast_df = _forecast_dataframe(selected_result)
+    st.markdown(f"#### {selected_scenario} scenario details")
     with st.expander("Forecast cash flows"):
         st.dataframe(
             forecast_df,
@@ -399,20 +457,23 @@ def render_dcf(context):
             },
         )
         st.download_button(
-            "Download Base-Case Forecast CSV",
+            f"Download {selected_scenario} Forecast CSV",
             data=forecast_df.to_csv(index=False).encode("utf-8"),
-            file_name=f"{ticker}_dcf_forecast.csv",
+            file_name=f"{ticker}_{selected_scenario.lower()}_dcf_forecast.csv",
             mime="text/csv",
             width="stretch",
         )
 
     scenario_assumptions = pd.DataFrame(
-        {
-            "Scenario": ["Bear", "Base", "Bull"],
-            "Growth Adjustment (pp)": [-2.0, 0.0, 2.0],
-            "Margin Adjustment (pp)": [-2.0, 0.0, 2.0],
-            "WACC Adjustment (pp)": [1.0, 0.0, -1.0],
-        }
+        [
+            {
+                "Scenario": scenario,
+                "Growth Adjustment (pp)": adjustments["growth_delta"] * 100,
+                "Margin Adjustment (pp)": adjustments["margin_delta"] * 100,
+                "WACC Adjustment (pp)": adjustments["wacc_delta"] * 100,
+            }
+            for scenario, adjustments in SCENARIO_ADJUSTMENTS.items()
+        ]
     )
     scenario_rows = []
     for _, row in scenario_assumptions.iterrows():
@@ -450,7 +511,7 @@ def render_dcf(context):
                 }
             )
 
-    with st.expander("Automatic bear, base, and bull range"):
+    with st.expander("Automatic bear, neutral, and bull range"):
         st.caption(
             "These scenarios are generated automatically using ±2 percentage points for growth and margin and ∓1 percentage point for WACC."
         )
@@ -467,15 +528,15 @@ def render_dcf(context):
         )
 
     wacc_values = tuple(
-        max(base_inputs.wacc + adjustment, 0.0001)
+        max(selected_inputs.wacc + adjustment, 0.0001)
         for adjustment in (-0.02, -0.01, -0.005, 0, 0.005, 0.01, 0.02)
     )
     terminal_growth_values = tuple(
-        min(max(base_inputs.terminal_growth + adjustment, -0.099), 0.099)
+        min(max(selected_inputs.terminal_growth + adjustment, -0.099), 0.099)
         for adjustment in (-0.01, -0.005, 0, 0.005, 0.01)
     )
     sensitivity = calculate_sensitivity(
-        base_inputs,
+        selected_inputs,
         wacc_values=wacc_values,
         terminal_growth_values=terminal_growth_values,
     )
