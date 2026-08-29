@@ -86,124 +86,294 @@ def _format_currency(value, decimals=2):
     return f"{sign}${abs(value):,.{decimals}f}"
 
 
+def _render_dcf_styles():
+    st.markdown(
+        """
+        <style>
+        .dcf-scenario-copy {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 1rem 0 0.35rem;
+        }
+
+        .dcf-scenario-copy span {
+            color: #e5e7eb;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .dcf-scenario-copy p {
+            color: #7f8b9d;
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        div[data-testid="stSegmentedControl"] {
+            margin-bottom: 0.2rem;
+            width: 100%;
+        }
+
+        div[data-testid="stSegmentedControl"] > div,
+        div[data-testid="stSegmentedControl"] [role="radiogroup"] {
+            width: 100%;
+        }
+
+        div[data-testid="stSegmentedControl"] [role="radiogroup"] {
+            display: flex;
+            gap: 3px;
+            padding: 3px;
+            border: 1px solid #273449;
+            border-radius: 8px;
+            background: #0b1220;
+        }
+
+        div[data-testid="stSegmentedControl"] button {
+            flex: 1 1 0;
+            min-height: 2.35rem;
+            border: 0 !important;
+            border-radius: 5px !important;
+            background: transparent !important;
+            color: #8591a3 !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.075em;
+            text-transform: uppercase;
+            box-shadow: none !important;
+        }
+
+        div[data-testid="stSegmentedControl"] button:hover {
+            color: #e5e7eb !important;
+            background: #151f2e !important;
+        }
+
+        div[data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+            color: #0b1220 !important;
+            background: #e5e7eb !important;
+        }
+
+        .dcf-scenario-assumptions {
+            color: #7f8b9d;
+            font-size: 0.78rem;
+            min-height: 1.2rem;
+            margin: 0.15rem 0 0.85rem;
+        }
+
+        .dcf-value-panel {
+            --scenario-accent: #6b9ff8;
+            margin: 0.35rem 0 0.85rem;
+            overflow: hidden;
+            border: 1px solid #273449;
+            border-left: 3px solid var(--scenario-accent);
+            border-radius: 8px;
+            background: #0e1726;
+        }
+
+        .dcf-value-panel.bear {
+            --scenario-accent: #d97757;
+        }
+
+        .dcf-value-panel.bull {
+            --scenario-accent: #43a675;
+        }
+
+        .dcf-value-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+            gap: 2rem;
+            padding: 1.25rem 1.35rem 1.1rem;
+        }
+
+        .dcf-value-eyebrow {
+            color: #7f8b9d;
+            font-size: 0.7rem;
+            font-weight: 650;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+
+        .dcf-value-label {
+            color: #b4bdca;
+            font-size: 0.82rem;
+            margin-top: 0.75rem;
+        }
+
+        .dcf-value-price {
+            color: #f5f7fa;
+            font-size: clamp(2.85rem, 7vw, 4.35rem);
+            font-weight: 720;
+            letter-spacing: -0.055em;
+            line-height: 0.98;
+            margin-top: 0.2rem;
+        }
+
+        .dcf-market-comparison {
+            min-width: 10rem;
+            padding-bottom: 0.25rem;
+            text-align: right;
+        }
+
+        .dcf-market-comparison span {
+            display: block;
+            color: #7f8b9d;
+            font-size: 0.67rem;
+            font-weight: 650;
+            letter-spacing: 0.075em;
+            text-transform: uppercase;
+        }
+
+        .dcf-market-comparison strong {
+            display: block;
+            color: #c8d0dc;
+            font-size: 1.35rem;
+            font-weight: 680;
+            line-height: 1.15;
+            margin-top: 0.28rem;
+        }
+
+        .dcf-market-comparison strong.positive {
+            color: #69bd8e;
+        }
+
+        .dcf-market-comparison strong.negative {
+            color: #df876e;
+        }
+
+        .dcf-market-comparison small {
+            color: #7f8b9d;
+            font-size: 0.72rem;
+        }
+
+        .dcf-value-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            border-top: 1px solid #273449;
+            background: #0b1320;
+        }
+
+        .dcf-value-stat {
+            min-width: 0;
+            padding: 0.72rem 1rem 0.78rem;
+            border-right: 1px solid #273449;
+        }
+
+        .dcf-value-stat:last-child {
+            border-right: 0;
+        }
+
+        .dcf-value-stat span {
+            display: block;
+            color: #778397;
+            font-size: 0.64rem;
+            font-weight: 650;
+            letter-spacing: 0.065em;
+            text-transform: uppercase;
+        }
+
+        .dcf-value-stat strong {
+            display: block;
+            overflow-wrap: anywhere;
+            color: #dbe1e9;
+            font-size: 0.93rem;
+            font-weight: 620;
+            margin-top: 0.18rem;
+        }
+
+        @media (max-width: 700px) {
+            .dcf-scenario-copy p {
+                display: none;
+            }
+
+            .dcf-value-top {
+                grid-template-columns: 1fr;
+                gap: 0.85rem;
+            }
+
+            .dcf-market-comparison {
+                padding-bottom: 0;
+                text-align: left;
+            }
+
+            .dcf-value-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .dcf-value-stat:nth-child(2) {
+                border-right: 0;
+            }
+
+            .dcf-value-stat:nth-child(-n + 2) {
+                border-bottom: 1px solid #273449;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _render_implied_price_hero(ticker, result, current_price, scenario):
     market_difference = None
     if current_price and current_price > 0:
         market_difference = (result.implied_value_per_share / current_price - 1) * 100
 
     if market_difference is None:
-        comparison_text = "Current-market comparison unavailable"
+        comparison_value = "—"
+        comparison_note = "Market comparison unavailable"
         comparison_class = "neutral"
     else:
-        comparison_text = f"{market_difference:+.1f}% model gap vs current market price"
+        comparison_value = f"{market_difference:+.1f}%"
+        comparison_note = "model premium" if market_difference >= 0 else "model discount"
         comparison_class = "positive" if market_difference >= 0 else "negative"
 
-    st.markdown(
-        """
-        <style>
-        .dcf-value-hero {
-            padding: 1.6rem 1.8rem;
-            margin: 0.5rem 0 1rem 0;
-            border: 1px solid #2563eb;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #0b1730 0%, #111827 60%, #0f2447 100%);
-            box-shadow: 0 16px 48px rgba(37, 99, 235, 0.18);
-        }
-
-        .dcf-value-hero.bear {
-            border-color: #ea580c;
-            background: linear-gradient(135deg, #2b140d 0%, #111827 60%, #32180d 100%);
-            box-shadow: 0 16px 48px rgba(234, 88, 12, 0.16);
-        }
-
-        .dcf-value-hero.bull {
-            border-color: #16a34a;
-            background: linear-gradient(135deg, #08291a 0%, #111827 60%, #0b321e 100%);
-            box-shadow: 0 16px 48px rgba(22, 163, 74, 0.16);
-        }
-
-        .dcf-value-eyebrow {
-            color: #93c5fd;
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-
-        .dcf-value-label {
-            color: #cbd5e1;
-            font-size: 1rem;
-            margin-top: 0.65rem;
-        }
-
-        .dcf-value-price {
-            color: #f8fafc;
-            font-size: clamp(3rem, 8vw, 5.25rem);
-            font-weight: 800;
-            letter-spacing: -0.05em;
-            line-height: 1;
-            margin: 0.3rem 0 0.7rem 0;
-        }
-
-        .dcf-value-comparison {
-            display: inline-block;
-            padding: 0.35rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.88rem;
-            font-weight: 650;
-        }
-
-        .dcf-value-comparison.positive {
-            color: #bbf7d0;
-            background: rgba(22, 101, 52, 0.35);
-            border: 1px solid #166534;
-        }
-
-        .dcf-value-comparison.negative {
-            color: #fed7aa;
-            background: rgba(154, 52, 18, 0.3);
-            border: 1px solid #9a3412;
-        }
-
-        .dcf-value-comparison.neutral {
-            color: #cbd5e1;
-            background: rgba(51, 65, 85, 0.45);
-            border: 1px solid #475569;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
     scenario_class = str(scenario).lower()
-    st.markdown(
-        f"""
-        <div class="dcf-value-hero {scenario_class}">
-            <div class="dcf-value-eyebrow">{escape(str(scenario))} scenario DCF · {escape(str(ticker))}</div>
-            <div class="dcf-value-label">Implied value per share</div>
-            <div class="dcf-value-price">{_format_currency(result.implied_value_per_share)}</div>
-            <div class="dcf-value-comparison {comparison_class}">{comparison_text}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
     terminal_share = (
         result.present_value_terminal / result.enterprise_value * 100
         if result.enterprise_value
         else 0
     )
-    metric1, metric2, metric3, metric4 = st.columns(4)
-    metric1.metric(
-        "Current Market Price",
-        _format_currency(current_price) if current_price else "N/A",
+    st.markdown(
+        f"""
+        <div class="dcf-value-panel {scenario_class}">
+            <div class="dcf-value-top">
+                <div>
+                    <div class="dcf-value-eyebrow">{escape(str(ticker))} / DCF / {escape(str(scenario))}</div>
+                    <div class="dcf-value-label">Implied share value</div>
+                    <div class="dcf-value-price">{_format_currency(result.implied_value_per_share)}</div>
+                </div>
+                <div class="dcf-market-comparison">
+                    <span>Versus market</span>
+                    <strong class="{comparison_class}">{comparison_value}</strong>
+                    <small>{comparison_note}</small>
+                </div>
+            </div>
+            <div class="dcf-value-stats">
+                <div class="dcf-value-stat">
+                    <span>Market price</span>
+                    <strong>{_format_currency(current_price) if current_price else "N/A"}</strong>
+                </div>
+                <div class="dcf-value-stat">
+                    <span>Enterprise value</span>
+                    <strong>{_format_currency(result.enterprise_value, 1)}M</strong>
+                </div>
+                <div class="dcf-value-stat">
+                    <span>Equity value</span>
+                    <strong>{_format_currency(result.equity_value, 1)}M</strong>
+                </div>
+                <div class="dcf-value-stat">
+                    <span>Terminal value / EV</span>
+                    <strong>{terminal_share:.1f}%</strong>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    metric2.metric("Enterprise Value", f"{_format_currency(result.enterprise_value, 1)}M")
-    metric3.metric("Equity Value", f"{_format_currency(result.equity_value, 1)}M")
-    metric4.metric("Terminal Value / EV", f"{terminal_share:.1f}%")
-    st.caption(
-        "Automatically generated from the latest available company data and model defaults. "
-        "This is a research-model output, not a price target or recommendation."
-    )
+    st.caption("Automatic research-model output · not a recommendation")
 
 
 def render_dcf(context):
@@ -211,8 +381,9 @@ def render_dcf(context):
     info = context["info"]
     current_price = context["current_price"]
 
-    st.subheader("Discounted Cash Flow Valuation")
-    st.caption("Automatic five-year DCF. Pick an outlook; no assumptions need to be entered.")
+    _render_dcf_styles()
+    st.subheader("Discounted cash flow")
+    st.caption("Five-year unlevered cash-flow model with automatic inputs.")
 
     if _is_financial_company(info):
         st.warning(
@@ -230,31 +401,45 @@ def render_dcf(context):
         balance_sheet=balance_sheet,
     )
 
-    st.markdown("#### Valuation scenario")
-    selected_scenario = st.select_slider(
+    st.markdown(
+        """
+        <div class="dcf-scenario-copy">
+            <span>Scenario</span>
+            <p>Switch the full model without editing assumptions</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    selected_scenario = st.segmented_control(
         "Scenario outlook",
         options=tuple(SCENARIO_ADJUSTMENTS),
-        value="Neutral",
-        key=f"dcf_selected_scenario_{ticker}",
+        default="Neutral",
+        key=f"dcf_scenario_switch_{ticker}",
         label_visibility="collapsed",
         help="Moves the full DCF between consistent automatic bear, neutral, and bull assumptions.",
+        format_func=str.upper,
+        required=True,
+        width="stretch",
     )
     selected_adjustments = SCENARIO_ADJUSTMENTS[selected_scenario]
-    st.caption(selected_adjustments["summary"])
+    st.markdown(
+        f'<div class="dcf-scenario-assumptions">{selected_adjustments["summary"]}</div>',
+        unsafe_allow_html=True,
+    )
 
     result_section = st.container()
     quality_section = st.container()
     critical_inputs_missing = defaults.base_revenue <= 0 or defaults.diluted_shares <= 0
 
     with st.expander(
-        "Adjust assumptions (optional)",
+        "Model assumptions · optional",
         expanded=critical_inputs_missing,
     ):
-        st.info(
+        st.caption(
             "The neutral model is already filled in. Change these only when you want to override its automatic assumptions."
         )
 
-        st.markdown("##### Revenue growth and EBIT margin")
+        st.markdown("**Growth and margin**")
         forecast_editor = pd.DataFrame(
             {
                 "Year": [1, 2, 3, 4, 5],
@@ -278,7 +463,7 @@ def render_dcf(context):
 
         operating_col, reinvestment_col, capital_col = st.columns(3)
         with operating_col:
-            st.markdown("##### Company data")
+            st.markdown("**Company data**")
             base_revenue = _amount_input(
                 "Base Revenue ($M)",
                 defaults.base_revenue / 1_000_000,
@@ -302,7 +487,7 @@ def render_dcf(context):
             )
 
         with reinvestment_col:
-            st.markdown("##### Operating and reinvestment")
+            st.markdown("**Operating and reinvestment**")
             tax_rate = st.number_input(
                 "Effective Tax Rate (%)",
                 min_value=0.0,
@@ -337,7 +522,7 @@ def render_dcf(context):
             )
 
         with capital_col:
-            st.markdown("##### Discount and terminal value")
+            st.markdown("**Discount and terminal value**")
             wacc = st.number_input(
                 "WACC (%)",
                 min_value=0.01,
@@ -356,7 +541,7 @@ def render_dcf(context):
             )
 
         reset_keys = (
-            f"dcf_selected_scenario_{ticker}",
+            f"dcf_scenario_switch_{ticker}",
             f"dcf_forecast_assumptions_{ticker}",
             f"dcf_base_revenue_{ticker}",
             f"dcf_cash_{ticker}",
@@ -437,7 +622,7 @@ def render_dcf(context):
                     st.warning(warning)
 
     forecast_df = _forecast_dataframe(selected_result)
-    st.markdown(f"#### {selected_scenario} scenario details")
+    st.markdown(f"##### {selected_scenario} scenario details")
     with st.expander("Forecast cash flows"):
         st.dataframe(
             forecast_df,
@@ -511,9 +696,9 @@ def render_dcf(context):
                 }
             )
 
-    with st.expander("Automatic bear, neutral, and bull range"):
+    with st.expander("Scenario comparison"):
         st.caption(
-            "These scenarios are generated automatically using ±2 percentage points for growth and margin and ∓1 percentage point for WACC."
+            "Growth and EBIT margin move ±2 percentage points; WACC moves ∓1 percentage point."
         )
         st.dataframe(
             pd.DataFrame(scenario_rows),
