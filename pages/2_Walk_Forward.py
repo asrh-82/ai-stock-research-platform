@@ -84,6 +84,9 @@ snapshot = st.session_state["wf_snapshot"]
 manifest = snapshot.manifest()
 st.caption(f"Loaded {manifest['rows']:,} sessions: {manifest['first_session']} to {manifest['last_session']}. "
            f"Source: {manifest['source']}.")
+if manifest["floating_point_ohlc_discrepancies"]:
+    st.caption(f"OHLC floating-point discrepancies: {manifest['floating_point_ohlc_discrepancies']}. "
+               "Accepted only within eight double-precision epsilons; input prices are unchanged.")
 if manifest["gaps_over_seven_calendar_days"] or manifest["zero_volume_sessions"]:
     st.warning("This snapshot has long date gaps or zero-volume sessions. Review the data audit before interpreting results.")
 if st.button("Run development and freeze plan", key="wf_run", type="primary"):
@@ -126,14 +129,17 @@ def show_comparison(simulation, passive, prefix):
                "Open positions are marked, not silently liquidated. Fractional adjusted units are not executable historical shares.")
 
 
-dev_tab, holdout_tab, audit_tab = st.tabs(["Development", "Reserved holdout", "Rules and data audit"])
+dev_tab, holdout_tab, audit_tab = st.tabs(
+    ["Development", "Reserved holdout", "Rules and data audit"],
+    key="wf_active_tab", on_change="rerun",
+)
 with dev_tab:
     show_comparison(result.simulation, result.passive, "Walk-forward")
-    st.dataframe(result.folds, hide_index=True, use_container_width=True)
+    st.dataframe(result.folds, hide_index=True, width="stretch")
     st.caption("Selections are refit on expanding training prefixes. Test windows do not overlap. "
                "The final development fold can be shorter. Portfolio cash and holdings carry across folds without a free reset.")
     with st.expander("All candidate training scores, including losers"):
-        st.dataframe(result.training_scores, hide_index=True, use_container_width=True)
+        st.dataframe(result.training_scores, hide_index=True, width="stretch")
     st.download_button("Export development equity", result.simulation.curve.to_csv(),
                        "walk_forward_equity.csv", "text/csv", key="wf_export_dev")
     st.download_button("Export development orders", result.simulation.orders.to_csv(index=False),
@@ -158,7 +164,7 @@ with holdout_tab:
         held, passive, stress = st.session_state["wf_holdout"]
         st.write("Holdout evaluated after freeze. This does not certify a trading edge.")
         show_comparison(held, passive, "Holdout")
-        st.dataframe(stress, hide_index=True, use_container_width=True)
+        st.dataframe(stress, hide_index=True, width="stretch")
         st.caption("1x / 2x / 4x slippage, fixed signals and selections, unchanged commissions. No retuning to improve stressed results.")
         st.download_button("Export holdout equity", held.curve.to_csv(), "holdout_equity.csv", "text/csv", key="wf_held_equity")
         st.download_button("Export holdout orders", held.orders.to_csv(index=False), "holdout_orders.csv", "text/csv", key="wf_held_orders")
@@ -166,7 +172,7 @@ with holdout_tab:
         st.write("Holdout metrics have not been calculated. Export the plan before opening them.")
 
 with audit_tab:
-    st.dataframe(pd.DataFrame([{"rule": r.label, **asdict(r)} for r in DEFAULT_RULES]), hide_index=True, use_container_width=True)
+    st.dataframe(pd.DataFrame([{"rule": r.label, **asdict(r)} for r in DEFAULT_RULES]), hide_index=True, width="stretch")
     st.write("SMA: long when the trailing fast average exceeds the slow average. Momentum: long when the trailing price change is positive. "
              "RSI: enter at or below 30, exit at or above 55, otherwise retain the signal. Cash: always uninvested.")
     st.caption("RSI uses exponential gain/loss averages with alpha=1/window, adjust=False, and a full-window warmup. "

@@ -13,6 +13,13 @@ import pandas as pd
 
 COLUMNS = ["Open", "High", "Low", "Close", "Volume"]
 MAX_ROWS = 8000
+OHLC_RELATIVE_TOLERANCE = 8 * np.finfo(float).eps
+
+
+def _ohlc_relative_errors(data: pd.DataFrame) -> pd.Series:
+    high_error = (data[["Open", "Low", "Close"]].max(axis=1) - data.High).clip(lower=0)
+    low_error = (data.Low - data[["Open", "High", "Close"]].min(axis=1)).clip(lower=0)
+    return np.maximum(high_error, low_error) / data[COLUMNS[:4]].max(axis=1)
 
 
 def validate_daily(frame: pd.DataFrame) -> pd.DataFrame:
@@ -40,11 +47,9 @@ def validate_daily(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Missing or infinite observations must be investigated, not silently filled.")
     if (data[COLUMNS[:4]] <= 0).any().any() or (data.Volume < 0).any():
         raise ValueError("Prices must be positive; volume must be nonnegative.")
-    high_error = (data[["Open", "Low", "Close"]].max(axis=1) - data.High).clip(lower=0)
-    low_error = (data.Low - data[["Open", "High", "Close"]].min(axis=1)).clip(lower=0)
-    invalid = (high_error > 0) | (low_error > 0)
+    relative_error = _ohlc_relative_errors(data)
+    invalid = relative_error > OHLC_RELATIVE_TOLERANCE
     if invalid.any():
-        relative_error = np.maximum(high_error, low_error) / data[COLUMNS[:4]].max(axis=1)
         first_bad_date = data.index[invalid][0].date()
         raise ValueError(
             f"Inconsistent OHLC bounds: {int(invalid.sum())} rows; "
@@ -71,6 +76,8 @@ class DailySnapshot:
                 "first_session": str(data.index[0].date()),
                 "last_session": str(data.index[-1].date()),
                 "zero_volume_sessions": int((data.Volume == 0).sum()),
+                "ohlc_relative_tolerance": OHLC_RELATIVE_TOLERANCE,
+                "floating_point_ohlc_discrepancies": int((_ohlc_relative_errors(data) > 0).sum()),
                 "gaps_over_seven_calendar_days": int((gaps > 7).sum()),
                 "calendar_completeness": "not independently verified",
                 "units": "fractional adjusted research units, not executable historical shares"}
