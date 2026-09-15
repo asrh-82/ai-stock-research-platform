@@ -1,0 +1,55 @@
+name: Phase 10 evidence
+on:
+  pull_request:
+    paths:
+      - 'Utils/research_*.py'
+      - 'pages/2_Walk_Forward.py'
+      - 'tests/test_research*.py'
+      - 'scripts/*research*'
+      - '.github/workflows/phase10-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install application and tests
+        run: python -m pip install -r requirements.txt pytest
+      - name: Full suite with machine-readable results
+        run: |
+          mkdir -p artifacts
+          python -m compileall -q app.py Utils pages tests scripts
+          python -m pytest tests -q --junitxml=artifacts/tests.xml
+      - name: Historical research exercise (provider may be unavailable)
+        id: historical
+        continue-on-error: true
+        run: python scripts/run_research_smoke.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser verification CLI
+        run: |
+          npm install --global agent-browser
+          agent-browser --version
+          agent-browser install --with-deps
+      - name: Browser workflow against CI-local server
+        run: bash scripts/browser_research_smoke.sh
+      - name: Summarize evidence status
+        if: always()
+        run: |
+          echo 'Historical exercise outcome: ${{ steps.historical.outcome }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Historical failures do not become synthetic successes. Inspect historical_research.json.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Browser check targets a CI-local server, not the protected Vercel URL.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase10-research-evidence
+          path: artifacts/
+          retention-days: 7
