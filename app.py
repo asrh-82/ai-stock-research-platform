@@ -1,79 +1,15 @@
+"""Application entrypoint: workspaces first, research methods second."""
 import streamlit as st
 
-from Utils.backtesting_ui import render_backtesting
-from Utils.dcf_ui import render_dcf
-from Utils.monte_carlo_ui import render_monte_carlo
-from Utils.ui_sections import (
-    apply_styles,
-    get_active_stock_context,
-    initialize_session_state,
-    render_analysis,
-    render_compare,
-    render_dashboard,
-    render_header,
-    render_sidebar,
-    render_watchlist,
-)
-
-APP_NAME = "Equity Research Platform"
-
-
-st.set_page_config(
-    page_title=APP_NAME,
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-apply_styles()
-initialize_session_state()
-
-active_ticker, period = render_sidebar()
-context = get_active_stock_context(active_ticker, period)
-
-if context is None:
-    st.error("Could not fetch stock data. Try another ticker or company search.")
-    st.stop()
-
-render_header(context, APP_NAME)
-
-(
-    dashboard_tab,
-    analysis_tab,
-    valuation_tab,
-    monte_carlo_tab,
-    backtest_tab,
-    compare_tab,
-    watchlist_tab,
-) = st.tabs(
-    [
-        "Dashboard",
-        "Analysis",
-        "Valuation",
-        "Monte Carlo",
-        "Backtest",
-        "Compare",
-        "Watchlist",
-    ]
-)
-
-with dashboard_tab:
-    render_dashboard(context)
-
-with analysis_tab:
-    render_analysis(context)
-
-with valuation_tab:
-    render_dcf(context)
-
-with monte_carlo_tab:
-    render_monte_carlo(context)
-
-with backtest_tab:
-    render_backtesting(context)
-
-with compare_tab:
-    render_compare(active_ticker)
-
-with watchlist_tab:
-    render_watchlist(active_ticker)
+st.set_page_config(page_title="Equity Research Platform", layout="wide", initial_sidebar_state="expanded")
+page = st.navigation({
+    "Workspace": [
+        st.Page("pages/0_Stock_Selection.py", title="Stock selection", default=True),
+        st.Page("pages/3_Company_Tools.py", title="Company tools"),
+    ],
+    "Research methods": [
+        st.Page("pages/1_Validation_Lab.py", title="Execution validation"),
+        st.Page("pages/2_Walk_Forward.py", title="Walk-forward research"),
+    ],
+})
+page.run()
