@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 COPY Utils ./Utils
 COPY Data ./Data
+COPY pages ./pages
+COPY components ./components
 
 EXPOSE 3000
 

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;font:12px/1.5 system-ui,sans-serif;color:#667085;background:transparent}#status{padding:5px 0}strong{font-weight:600}</style></head>
+<body><div id="status" role="status">Opening private browser record…</div>
+<script>
+"use strict";
+const KEY="equity-research.paper-vault.v1", LOCK=KEY+".write", MAX=2000000;
+const EMPTY={schema:1,revision:0,events:[]};
+let origin="*", lastRender=null;
+const status=document.getElementById("status");
+function post(type,extra={}) { window.parent.postMessage({isStreamlitMessage:true,type,...extra},origin); }
+function load(){
+  const text=localStorage.getItem(KEY);
+  if(!text) return {document:EMPTY,last_command:null};
+  if(text.length>MAX+10000) throw new Error("Stored record exceeds the size limit.");
+  const saved=JSON.parse(text);
+  if(!saved.document || saved.document.schema!==1 || !Array.isArray(saved.document.events))
+    throw new Error("Stored record is invalid. Preserve a backup; it was not overwritten.");
+  return saved;
+}
+function respond(saved,ack=null,error=null){
+  status.textContent=error || `Browser record ready · ${saved.document.events.length} saved events · this browser only`;
+  post("streamlit:setComponentValue",{value:{document:saved.document,ack,error,ready:!error},dataType:"json"});
+  post("streamlit:setFrameHeight",{height:30});
+}
+async function render(args){
+  const token=args.command ? args.command.id : "read";
+  if(lastRender===token) return;
+  lastRender=token;
+  try {
+    let saved=load();
+    const cmd=args.command;
+    if(!cmd){respond(saved);return;}
+    if(!navigator.locks){respond(saved,cmd.id,"Browser locking is unavailable. No record was changed.");return;}
+    await navigator.locks.request(LOCK,async()=>{
+      saved=load();
+      if(saved.last_command===cmd.id){respond(saved,cmd.id);return;}
+      if(saved.document.revision!==cmd.base_revision){
+        respond(saved,cmd.id,"Another tab changed the record. Review the refreshed record and retry.");return;
+      }
+      if(!cmd.document || cmd.document.schema!==1 || !Array.isArray(cmd.document.events))
+        throw new Error("Invalid save request.");
+      const serialized=JSON.stringify(cmd.document);
+      if(new TextEncoder().encode(serialized).length>MAX) throw new Error("Record is full. Export a backup.");
+      const next={document:cmd.document,last_command:cmd.id};
+      localStorage.setItem(KEY,JSON.stringify(next)); // Atomic write; failure leaves the prior record intact.
+      respond(next,cmd.id);
+    });
+  } catch(error){
+    status.textContent="Browser storage unavailable: "+error.message;
+    post("streamlit:setComponentValue",{value:{ready:false,error:status.textContent,ack:args.command?.id||null},dataType:"json"});
+  }
+}
+window.addEventListener("message",event=>{
+  if(event.source!==window.parent || event.data.type!=="streamlit:render")return;
+  origin=event.origin;
+  render(event.data.args);
+});
+window.addEventListener("storage",event=>{
+  if(event.key!==KEY)return;
+  try {respond(load());}catch(error){status.textContent=error.message;}
+});
+post("streamlit:componentReady",{apiVersion:1});
+post("streamlit:setFrameHeight",{height:30});
+</script></body></html>
