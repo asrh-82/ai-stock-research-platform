@@ -292,7 +292,7 @@ def render_workspace() -> None:
         _research(snapshot)
     else:
         _paper(document, ready, snapshot)
-    with st.expander("Record storage and backups"):
+    with st.expander("Record storage and backups", key="ws_backups_open", on_change="rerun"):
         st.caption("Saved in this browser on this deployment origin, not cloud-synced. Clearing site data, "
                    "private browsing, or opening a different preview can lose access. Export backups. "
                    "The app keeps an append-only hash chain, but users can edit/re-hash browser data; "
