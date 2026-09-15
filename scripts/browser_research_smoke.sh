@@ -4,7 +4,17 @@ set -euo pipefail
 mkdir -p artifacts
 python -m streamlit run pages/2_Walk_Forward.py --server.address=127.0.0.1 --server.port=8501 --server.headless=true --browser.gatherUsageStats=false > artifacts/streamlit.log 2>&1 &
 server_pid=$!
-trap 'agent-browser close || true; kill "$server_pid" 2>/dev/null || true' EXIT
+cleanup() {
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    agent-browser screenshot artifacts/browser_failure.png --full || true
+    agent-browser get text body > artifacts/browser_failure.txt || true
+    tail -n 60 artifacts/streamlit.log || true
+  fi
+  agent-browser close || true
+  kill "$server_pid" 2>/dev/null || true
+}
+trap cleanup EXIT
 for attempt in $(seq 1 30); do
   if curl --silent --fail http://127.0.0.1:8501/_stcore/health >/dev/null; then break; fi
   sleep 1
@@ -22,20 +32,40 @@ wait_for_text() {
   cat artifacts/browser_current.txt
   return 1
 }
+# Refresh refs on every interaction. Streamlit's visible LabelText wraps a hidden
+# radio input; selecting the input by role is not reliable in the browser CLI.
+click_snapshot_ref() {
+  agent-browser snapshot -i > artifacts/browser_current_snapshot.txt
+  ref=$(python - "$1" "$2" <<'PYREF'
+import re
+import sys
+from pathlib import Path
+role, name = sys.argv[1:]
+pattern = re.compile(r'^\s*-\s+' + re.escape(role) + r'\s+"' + re.escape(name) + r'".*?\bref=(e\d+)', re.I)
+lines = Path("artifacts/browser_current_snapshot.txt").read_text().splitlines()
+matches = [match.group(1) for line in lines if (match := pattern.search(line))]
+if len(matches) != 1:
+    raise SystemExit(f"Expected one {role} named {name!r}; found {len(matches)}.\n" + "\n".join(lines))
+print(matches[0])
+PYREF
+)
+  agent-browser click "@$ref"
+}
 wait_for_text 'Walk-forward Research'
 agent-browser eval 'document.querySelectorAll("[data-testid=stException]").length === 0' | grep 'true'
-agent-browser find role radio click --name 'Synthetic software demo'
+click_snapshot_ref LabelText 'Synthetic software demo'
+wait_for_text 'SYNTHETIC SOFTWARE DEMO'
 agent-browser snapshot -i > artifacts/browser_demo.txt
-agent-browser find role button click --name 'Load data'
+click_snapshot_ref button 'Load data'
 wait_for_text 'Loaded 1,260 sessions'
 agent-browser snapshot -i > artifacts/browser_loaded.txt
-agent-browser find role button click --name 'Run development and freeze plan'
+click_snapshot_ref button 'Run development and freeze plan'
 wait_for_text 'Strategy status: NOT VALIDATED'
 agent-browser screenshot artifacts/browser_development.png --full
 agent-browser snapshot -i > artifacts/browser_development.txt
-agent-browser find role tab click --name 'Reserved holdout'
+click_snapshot_ref tab 'Reserved holdout'
 agent-browser snapshot -i > artifacts/browser_reserved.txt
-agent-browser find role button click --name 'Evaluate frozen holdout'
+click_snapshot_ref button 'Evaluate frozen holdout'
 wait_for_text 'Holdout evaluated after freeze'
 agent-browser screenshot artifacts/browser_holdout.png --full
 agent-browser snapshot -i > artifacts/browser_holdout.txt
