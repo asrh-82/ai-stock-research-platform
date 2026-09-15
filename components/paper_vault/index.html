@@ -6,7 +6,7 @@
 "use strict";
 const KEY="equity-research.paper-vault.v1", LOCK=KEY+".write", MAX=2000000;
 const EMPTY={schema:1,revision:0,events:[]};
-let origin="*", lastRender=null;
+let origin="*", lastRender=null, published=false;
 const status=document.getElementById("status");
 function post(type,extra={}) { window.parent.postMessage({isStreamlitMessage:true,type,...extra},origin); }
 function load(){
@@ -19,6 +19,7 @@ function load(){
   return saved;
 }
 function respond(saved,ack=null,error=null){
+  published=true;
   status.textContent=error || `Browser record ready · ${saved.document.events.length} saved events · this browser only`;
   post("streamlit:setComponentValue",{value:{document:saved.document,ack,error,ready:!error},dataType:"json"});
   post("streamlit:setFrameHeight",{height:30});
@@ -30,7 +31,9 @@ async function render(args){
   try {
     let saved=load();
     const cmd=args.command;
-    if(!cmd){respond(saved);return;}
+    // Do not publish a second read after a write acknowledgment. That extra
+    // Streamlit rerun can consume a following button event before it completes.
+    if(!cmd){if(!published)respond(saved);return;}
     if(!navigator.locks){respond(saved,cmd.id,"Browser locking is unavailable. No record was changed.");return;}
     await navigator.locks.request(LOCK,async()=>{
       saved=load();
