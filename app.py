@@ -5,6 +5,7 @@ st.set_page_config(page_title="Equity Research Platform", layout="wide", initial
 page = st.navigation({
     "Workspace": [
         st.Page("pages/0_Stock_Selection.py", title="Stock selection", default=True),
+        st.Page("pages/4_Market_Monte_Carlo.py", title="Market Monte Carlo", url_path="market-monte-carlo"),
         st.Page("pages/3_Company_Tools.py", title="Company tools"),
     ],
     "Research methods": [

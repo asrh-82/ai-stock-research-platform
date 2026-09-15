@@ -1,0 +1,136 @@
+name: Market prediction evidence
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/market-predictions.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  predictions:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/phase-12-market-monte-carlo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install market engine dependencies
+        run: python -m pip install numpy pandas yfinance
+      - name: Execute existing engine with live provider data
+        run: |
+          python - <<'PY'
+          from dataclasses import asdict
+          from datetime import date, datetime, timezone
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import platform
+          import subprocess
+          import traceback
+
+          import numpy as np
+          import pandas as pd
+          import yfinance as yf
+
+          from Utils.market_data import load_market_snapshot
+          from Utils.market_export import evidence_bundle
+          from Utils.market_monte_carlo import (
+              ENGINE_VERSION, MODELS, MarketConfig, simulate_market,
+              summarize_market, walk_forward,
+          )
+
+          captured = datetime.now(timezone.utc)
+          output = Path('prediction_evidence')
+          output.mkdir(exist_ok=True)
+          code_paths = (
+              'Utils/market_monte_carlo.py', 'Utils/market_data.py',
+              'Utils/market_export.py',
+          )
+          record = {
+              'started_at': captured.isoformat(),
+              'git_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'engine_version': ENGINE_VERSION,
+              'source_sha256': {p: hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in code_paths},
+              'dependencies': {'python': platform.python_version(), 'numpy': np.__version__,
+                               'pandas': pd.__version__, 'yfinance': yf.__version__},
+              'horizon_trading_sessions': 63, 'simulations': 5000, 'seed': 42,
+              'lookback_years': 5, 'drift': 'zero',
+              'interpretation': 'Conditional adjusted-return price equivalents, not intrinsic values or calibrated probabilities.',
+              'results': {},
+          }
+          for symbol in ('PLTR', 'USO', 'SPCX'):
+              entry = {'symbol': symbol}
+              record['results'][symbol] = entry
+              try:
+                  snapshot = load_market_snapshot(symbol, lookback_years=5, now=captured)
+                  if symbol == 'SPCX' and snapshot.prices.index[0].date() < date(2026, 6, 12):
+                      raise ValueError('History predates the verified SpaceX IPO on 2026-06-12; possible reused-symbol history. No forecast produced.')
+                  entry.update(status='ok', provenance=snapshot.provenance,
+                               observations=len(snapshot.prices), warnings=list(snapshot.warnings), models={})
+                  for model in MODELS:
+                      config = MarketConfig(model=model, horizon=63, simulations=5000, seed=42, drift='zero')
+                      result = simulate_market(snapshot.prices, config, anchor=snapshot.reference_close)
+                      model_record = {'config': asdict(config), 'summary': summarize_market(result),
+                                      'diagnostics': result.diagnostics, 'warnings': list(result.warnings)}
+                      entry['models'][model] = model_record
+                      calibration = None
+                      try:
+                          calibration = walk_forward(snapshot.prices, config)
+                          model_record['coverage'] = {
+                              'folds': len(calibration),
+                              'covered': int(calibration['Covered'].sum()),
+                              'coverage_fraction': float(calibration['Covered'].mean()),
+                              'mean_interval_score': float(calibration['Interval score'].mean()),
+                          }
+                      except ValueError as exc:
+                          model_record['coverage_unavailable'] = str(exc)
+                      bundle_name = f'{symbol}_{model}_{captured.date()}.zip'
+                      (output / bundle_name).write_bytes(evidence_bundle(snapshot, result, calibration))
+                      print('AXION_MODEL_RESULT ' + json.dumps({
+                          'symbol': symbol, 'model': model, 'as_of_session': snapshot.provenance['as_of_session'],
+                          'reference_close': snapshot.reference_close, 'observations': len(snapshot.prices),
+                          'summary': model_record['summary'], 'coverage': model_record.get('coverage'),
+                      }, allow_nan=False), flush=True)
+              except Exception as exc:
+                  entry.update(status='blocked', error_type=type(exc).__name__, error=str(exc))
+                  print('AXION_BLOCKED ' + json.dumps(entry, allow_nan=False), flush=True)
+                  traceback.print_exc()
+          record['finished_at'] = datetime.now(timezone.utc).isoformat()
+          (output / 'results.json').write_text(json.dumps(record, indent=2, allow_nan=False))
+          rows = ['# Market Monte Carlo: live evidence', '',
+                  '5,000 paths; 63 trading sessions; seed 42; five-year history; zero log drift.', '',
+                  '| Symbol | Model | Reference close | As-of session | P05 | Median | Mean | P95 | Loss frequency | Holdout coverage |',
+                  '|---|---|---:|---|---:|---:|---:|---:|---:|---|']
+          for symbol, entry in record['results'].items():
+              if entry['status'] != 'ok':
+                  rows.append(f"| {symbol} | BLOCKED: {entry['error']} | | | | | | | | |")
+                  continue
+              for model, item in entry['models'].items():
+                  summary = item['summary']
+                  coverage = item.get('coverage')
+                  coverage_text = f"{coverage['covered']}/{coverage['folds']}" if coverage else 'Unavailable'
+                  rows.append(f"| {symbol} | {model} | {entry['provenance']['reference_close']:.4f} | {entry['provenance']['as_of_session']} | {summary['p05']:.4f} | {summary['median']:.4f} | {summary['mean']:.4f} | {summary['p95']:.4f} | {summary['probability_loss']:.2%} | {coverage_text} |")
+          rows.extend(['', 'Intervals and frequencies are conditional on the model. Coverage checks are small-sample diagnostics, not evidence of profitability.',
+                       'SpaceX IPO identity check uses its issuer announcement: https://ir.spacex.com/updates/releases-details/2026/Space-Exploration-Technologies-Corp--Announces-Pricing-of-Initial-Public-Offering/default.aspx',
+                       'No synthetic data, stale quote substitution, minimum-history bypass, engine changes, or trades.'])
+          report = '\n'.join(rows) + '\n'
+          (output / 'summary.md').write_text(report)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as handle:
+              handle.write(report)
+          print(report, flush=True)
+          print('AXION_COMPLETE_JSON ' + json.dumps(record, allow_nan=False), flush=True)
+          if not any(entry['status'] == 'ok' for entry in record['results'].values()):
+              raise SystemExit('No live forecasts completed; see the preserved provider/validation errors.')
+          PY
+      - name: Preserve exact inputs and simulation outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-prediction-evidence
+          path: prediction_evidence/
+          if-no-files-found: error
+          retention-days: 30
