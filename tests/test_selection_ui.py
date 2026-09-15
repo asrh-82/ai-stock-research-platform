@@ -92,3 +92,32 @@ def test_provider_failure_is_visible_not_a_fake_scan(vault):
 def test_advanced_page_navigation_preserved(vault):
     at=page();at.switch_page('pages/2_Walk_Forward.py').run()
     assert not at.exception and at.title[0].value=='Walk-forward Research'
+
+
+@pytest.mark.parametrize("section,target", [
+    ("DCF scenarios", "Utils.dcf_ui.render_dcf"),
+    ("Assumption uncertainty", "Utils.monte_carlo_ui.render_monte_carlo"),
+])
+def test_research_routes_selected_company_to_existing_valuation(vault, section, target):
+    import pandas as pd
+    from Utils.paper_record import append_event
+    batch, _ = demo_universe()
+    batch.synthetic = False
+    recorded = (batch.histories['SPY'].prices.index[-1].tz_localize('America/New_York')
+                + pd.Timedelta(days=1, hours=12)).to_pydatetime()
+    frozen = scan(batch, now=recorded)
+    vault['document'] = append_event(empty_ledger(), 'scan', frozen)
+    at = page()
+    at.selectbox(key='ws_selected').set_value('ALFA').run()
+    at.button(key='ws_open_research').click().run()
+    context = {'ticker': 'ALFA', 'company_name': 'Mock company',
+               'info': {'sector': 'Technology'}, 'current_price': 50.,
+               'financials': pd.DataFrame()}
+    with patch('Utils.selection_ui.company_context', return_value=context):
+        at.button(key='ws_load_company').click().run()
+    with patch(target) as renderer:
+        at.radio(key='ws_valuation_ALFA').set_value(section).run()
+        assert renderer.call_count == 1
+        assert renderer.call_args.args[0]['ticker'] == 'ALFA'
+    assert not at.exception
+    assert records(vault['document'], 'scan')[-1] == frozen

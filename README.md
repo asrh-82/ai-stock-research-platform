@@ -1,285 +1,99 @@
 # AI Stock Research Platform
 
-A focused equity research platform built with Python, Streamlit, and market data from Yahoo Finance.
+A quant-assisted equity research workspace built with Python and Streamlit. Start with a transparent cross-sectional ranking, inspect the selected company, and record paired model-versus-user paper decisions.
 
-The application combines company research, valuation, simulation, strategy backtesting, risk analysis, watchlist management, peer comparison, and custom research scoring in a single dashboard.
-
-The product is being developed toward an end-to-end research workflow with editable DCF valuation, Monte Carlo valuation, strategy backtesting, and downloadable research reports.
-
-## Screenshots
-
-### Dashboard
-
-![Dashboard](screenshots/dashboard.png)
-
-### Analysis
-
-![Analysis 1](screenshots/analysis1.png)
-
-![Analysis 2](screenshots/analysis2.png)
-
-## Features
-
-### Company Research
-
-- Company and ticker search
-- Company profile information
-- Sector and industry data
-- Market capitalization
-- Revenue and profitability metrics
-- Earnings and recommendation data
-- Historical market data
-
-### Market Analysis
-
-- Historical price charts
-- Return calculations
-- Volatility analysis
-- Maximum drawdown analysis
-- Sharpe ratio calculations
-- Revenue growth analysis
-
-### DCF Valuation
-
-- Editable five-year revenue-growth and EBIT-margin forecast
-- Unlevered free-cash-flow calculation
-- Cash and debt bridge from enterprise value to equity value
-- Implied value per diluted share
-- Editable base, bull, and bear scenarios
-- WACC and terminal-growth sensitivity analysis
-- Explicit source and fallback warnings
-- CSV forecast export
-
-### Monte Carlo Valuation
-
-- Reuses the deterministic DCF engine across thousands of assumption draws
-- Automatic neutral-case inputs with optional bear and bull centers
-- Configurable simulation count, random seed, and uncertainty ranges
-- Economic validation for WACC, terminal growth, growth, and margins
-- Median, mean, percentile range, and probability above current market price
-- Distribution chart and reproducible simulation CSV export
-
-### Strategy Backtesting
-
-- SMA crossover, price momentum, RSI mean reversion, and buy-and-hold rules
-- Next-period signal execution to prevent same-period look-ahead
-- Long/cash and long/short position rules
-- Daily, weekly, and monthly rebalancing
-- Transaction costs, slippage, benchmark comparison, and holdout evaluation
-- Cumulative return, CAGR, volatility, Sharpe, Sortino, maximum drawdown, turnover, exposure, and trade statistics
-- Downloadable trade ledger and daily performance series
-
-### Research Scoring
-
-The platform includes a custom rule-based scoring system that evaluates companies using:
-
-- Valuation metrics
-- Profitability metrics
-- Revenue growth
-- Debt levels
-- Volatility
-- Maximum drawdown
-- Risk-adjusted returns
-
-### Watchlist Management
-
-- Add and remove securities
-- Persistent local storage
-- Live pricing
-- Company tracking
-
-### Company Comparison
-
-- Compare multiple companies
-- Compare valuation metrics
-- Compare profitability metrics
-- Compare risk metrics
-- Compare research scores
-
-## Tech Stack
-
-- Python
-- Streamlit
-- yfinance
-- pandas
-- numpy
-- plotly
-- uv
-
-## Installation
-
-Clone the repository:
+## Run the workspace
 
 ```bash
 git clone https://github.com/asrh-82/ai-stock-research-platform.git
 cd ai-stock-research-platform
+python -m pip install -r requirements.txt
+streamlit run app.py
 ```
 
-Install dependencies:
+The default **Stock selection** workspace has three views:
 
-```bash
-uv sync
-```
+| View | Workflow |
+| --- | --- |
+| Screen | Choose 2–25 tickers. Review momentum ranks, recent returns, volatility, drawdowns, eligibility failures, and timestamps. |
+| Research | Open a ranked name with the same price context. Load current company fundamentals, DCF scenarios, or assumption uncertainty explicitly. |
+| Paper & results | Freeze the model's top-five picks and your selections together. Compare their next 21-session paper outcomes with an equal-universe portfolio and SPY. |
 
-## Running the Application
+To explore without a provider request, select **Synthetic demo**, scan, open a candidate, then freeze and update a paper example. Demo companies and outcomes are fictional and explicitly labeled.
 
-```bash
-uv run streamlit run app.py
-```
+## Quantitative baseline
 
-## Project Structure
+The ranking uses one declared formula:
 
 ```text
-ai-stock-research-platform/
-
-├── app.py
-│
-├── Utils/
-│   ├── data_utils.py
-│   ├── backtesting.py
-│   ├── backtesting_ui.py
-│   ├── dcf.py
-│   ├── dcf_data.py
-│   ├── dcf_ui.py
-│   ├── monte_carlo.py
-│   ├── monte_carlo_ui.py
-│   ├── scoring.py
-│   ├── ui_sections.py
-│   └── watchlist_utils.py
-│
-├── Data/
-│   └── watchlist.json
-│
-├── screenshots/
-│
-├── tests/
-├── ROADMAP.md
-├── pyproject.toml
-├── uv.lock
-└── README.md
+AdjustedClose[t-21] / AdjustedClose[t-252] - 1
 ```
 
-## File Responsibilities
+This is a 252/21-session approximation of prior-year momentum excluding the most recent month, not a replication of published factor portfolios. Eligibility uses aligned historical coverage, reported price, and recent dollar volume. Thresholds, exclusions, ties, and data hashes are visible. Percentiles are ranks within the chosen universe, not probabilities of profit.
 
-### app.py
+Fundamentals and valuation are research context. They do not silently change the momentum score. Current company data is not inserted into historical decisions.
 
-Application entry point and navigation.
+## Private records
 
-### Utils/data_utils.py
+Scans and decisions are saved in this browser on this deployment origin, not in a cloud account. Export the JSON backup under **Record storage and backups**. Restore is available only into an empty browser record. Clearing site data or opening another device or preview does not automatically carry records over.
 
-- Company search
-- Market data retrieval
-- Price history retrieval
-- Financial statement retrieval
-- Earnings and recommendation retrieval
-- Comparison dataset generation
+Writes require browser acknowledgment and use revision checks and a browser lock. The app preserves prior events instead of editing them. Hashes detect accidental corruption, not intentional re-hashing; timestamps are not independently attested. Limits are 200 events and 2 MB per record.
 
-### Utils/dcf.py
+## Paper evaluation scope
 
-- Pure DCF calculations and validation
-- Scenario adjustments
-- WACC and terminal-growth sensitivity calculations
+Paper outcomes are **independent 21-session cohorts**, not an automatically rebalanced continuous account. The model chooses up to five equally allocated names. User selections share the same allocation slots; unused slots remain cash. Market-data records begin no earlier than a session after the decision date. Missing frozen names block evaluation instead of disappearing from the results.
 
-### Utils/dcf_data.py
+Accounting uses fractional adjusted research units, 5 bps commission and 10 bps adverse slippage per side. These are explicit simulation assumptions, not calibrated real-world fills. Completed cohorts include a predetermined closing-price liquidation proxy. In-progress positions remain marked with hypothetical liquidation reported separately. Overlapping cohort returns must not be added together.
 
-- Financial-statement line-item extraction
-- Normalized DCF defaults
-- Source labels and explicit fallback warnings
+No broker connection, real orders, leverage, paid subscription, or automatic capital deployment is included. A passing software test or a favorable paper outcome does not demonstrate an investment edge.
 
-### Utils/dcf_ui.py
+## Existing research tools
 
-- Editable DCF assumptions
-- Forecast, scenario, and sensitivity rendering
-- Forecast CSV export
+**Company tools** retains the original dashboard, company analysis, peer comparison, watchlist, DCF, Monte Carlo, and price-strategy backtests. The existing mathematical engines retain their calculations.
 
-### Utils/monte_carlo.py
+**Research methods** groups execution validation and walk-forward research. The latter selects predefined daily rules from earlier data and evaluates later windows and a separately frozen final holdout. It is distinct from the cross-sectional stock scanner.
 
-- Reproducible DCF simulation engine
-- Economic draw validation
-- Valuation percentiles and market-price probability calculations
+DCF implies a value under stated cash-flow assumptions. Monte Carlo varies those assumptions; the fraction of simulated values above market price is not a probability of a profitable trade. The DCF's initial scope excludes banks and insurers.
 
-### Utils/monte_carlo_ui.py
+## Methodology and implementation
 
-- Automatic simulation setup
-- Distribution chart and summary rendering
-- Simulation CSV export
+- [Stock-selection workspace](docs/PHASE11_WORKSPACE.md): ranking, eligibility, browser persistence, paper-cohort accounting, and limitations.
+- [Daily walk-forward protocol](docs/PHASE10_RESEARCH.md): training, frozen holdouts, adjusted-unit accounting, and data requirements.
+- [Execution lab contract](docs/PHASE9_VALIDATION.md): whole-share OHLC replay and execution assumptions.
+- [Numerical notes](docs/PHASE10_NUMERICAL_NOTES.md): provider-adjustment tolerance without rewriting price data.
 
-### Utils/backtesting.py
+```text
+app.py                         Navigation and workspace entrypoint
+pages/                         Workspace, legacy company tools, advanced labs
+Utils/selection.py             Transparent ranking and exclusions
+Utils/selection_data.py        Bounded on-demand historical data loading
+Utils/selection_ui.py          Connected screen/research/paper workflow
+Utils/paper_record.py           Frozen decisions, outcomes, record validation
+Utils/paper_vault.py            Browser-storage acknowledgment bridge
+components/paper_vault/         Dependency-free private storage component
+Utils/dcf*.py                  Existing valuation calculations and interface
+Utils/monte_carlo*.py           Existing assumption simulation
+Utils/research_*.py             Daily data and walk-forward methodology
+Utils/validation_lab.py         Whole-share execution replay
+scripts/                       Provider and real-browser verification
+```
 
-- Price-signal generation and next-period execution
-- Transaction-cost, slippage, and benchmark calculations
-- Performance metrics, stability analysis, and trade-ledger generation
+## Verification
 
-### Utils/backtesting_ui.py
+```bash
+python -m pip install pytest
+python -m pytest tests -q
+```
 
-- Strategy and execution controls
-- Performance, drawdown, stability, and trade rendering
-- Trade-ledger and performance CSV export
+A Node.js runtime is required for the browser-JSON and component-protocol regression tests. CI installs the full application and browser dependencies. The workspace workflow checks the full suite, a separately reported current-data probe, real Chromium interactions, reload persistence, and backup export/import. CI-local browser verification does not verify a protected Vercel URL. Inspect the actual workflow status and evidence artifacts, not only this description.
 
-### Utils/watchlist_utils.py
+The Docker image includes both `pages/` and `components/`. Historical universe membership, independently checked vendor data/calendar, calibrated execution, durable attestation, continuous portfolio rebalancing, and a demonstrated trading edge remain outside this release.
 
-- Watchlist persistence
-- Watchlist add and remove operations
-- Watchlist research table generation
+## Legacy company-tool screenshots
 
-### Utils/scoring.py
-
-- Return calculations
-- Volatility calculations
-- Maximum drawdown calculations
-- Sharpe ratio calculations
-- Revenue growth calculations
-- Research score generation
-
-### Utils/ui_sections.py
-
-- Dashboard rendering
-- Analysis rendering
-- Comparison rendering
-- Watchlist rendering
-
-## Current Development
-
-Recently completed:
-
-- Modular codebase refactor
-- Watchlist management
-- Company comparison tools
-- Research scoring framework
-- UI cleanup and project restructuring
-- Research-only product refactor
-- Testable DCF calculation engine
-- Editable DCF valuation interface
-- Base, bull, and bear scenario analysis
-- WACC and terminal-growth sensitivity table
-- Reproducible Monte Carlo DCF valuation
-- Price-strategy backtesting with explicit bias controls
-
-Currently working on:
-
-- Stronger financial-statement normalization and source traceability
-- Historical DCF input display
-- Calculated WACC build-up with manual overrides
-- Excel model export
-- Correlated Monte Carlo assumptions
-- Walk-forward strategy evaluation and parameter stability
-
-Planned research expansion:
-
-- Comparable company analysis
-- Excel, CSV, and PDF research exports
-- Methodology and source-traceability views
-
-See [ROADMAP.md](ROADMAP.md) for milestone scope and acceptance criteria.
-
-## Notes
-
-This project currently uses rule-based analysis and financial metrics. The initial valuation scope is U.S.-listed, non-financial companies because banks and insurers require different models.
-
-No AI-generated investment recommendations are currently used within the platform.
+![Company dashboard](screenshots/dashboard.png)
+![Company analysis](screenshots/analysis1.png)
 
 ## Disclaimer
 
-This project is intended for educational and research purposes only.
-
-Nothing contained within this application should be considered financial or investment advice.
+This project is for education, software experimentation, and research. Outputs are not investment recommendations. No trained ML stock-selection model is included in the current baseline.
