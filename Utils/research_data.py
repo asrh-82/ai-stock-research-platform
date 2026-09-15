@@ -40,9 +40,17 @@ def validate_daily(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Missing or infinite observations must be investigated, not silently filled.")
     if (data[COLUMNS[:4]] <= 0).any().any() or (data.Volume < 0).any():
         raise ValueError("Prices must be positive; volume must be nonnegative.")
-    if ((data.High < data[["Open", "Low", "Close"]].max(axis=1)).any()
-            or (data.Low > data[["Open", "High", "Close"]].min(axis=1)).any()):
-        raise ValueError("Inconsistent OHLC bounds.")
+    high_error = (data[["Open", "Low", "Close"]].max(axis=1) - data.High).clip(lower=0)
+    low_error = (data.Low - data[["Open", "High", "Close"]].min(axis=1)).clip(lower=0)
+    invalid = (high_error > 0) | (low_error > 0)
+    if invalid.any():
+        relative_error = np.maximum(high_error, low_error) / data[COLUMNS[:4]].max(axis=1)
+        first_bad_date = data.index[invalid][0].date()
+        raise ValueError(
+            f"Inconsistent OHLC bounds: {int(invalid.sum())} rows; "
+            f"first session {first_bad_date}; maximum relative violation "
+            f"{float(relative_error.max()):.6g}. No rows were repaired or dropped."
+        )
     data.index.name = "Date"
     return data
 

@@ -20,7 +20,8 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 agent-browser open http://127.0.0.1:8501
-agent-browser wait --load networkidle
+agent-browser set viewport 1440 1200
+agent-browser wait --text "Walk-forward Research"
 agent-browser snapshot -i | tee artifacts/browser_initial.txt
 agent-browser screenshot artifacts/browser_initial.png
 wait_for_text() {
@@ -49,7 +50,12 @@ if len(matches) != 1:
 print(matches[0])
 PYREF
 )
+  echo "BROWSER_TARGET $1 $2 @$ref"
+  agent-browser scrollintoview "@$ref"
+  agent-browser wait 500
+  agent-browser is enabled "@$ref" | grep 'true'
   agent-browser click "@$ref"
+  agent-browser wait 500
 }
 wait_for_text 'Walk-forward Research'
 agent-browser eval 'document.querySelectorAll("[data-testid=stException]").length === 0' | grep 'true'
