@@ -27,7 +27,9 @@ def vault():
 
 
 def page():
-    return st_testing.AppTest.from_file(str(ROOT/'app.py'),default_timeout=45).run()
+    at = st_testing.AppTest.from_file(str(ROOT/'app.py'),default_timeout=45).run()
+    # Stock selection remains a full workspace, but Opportunities is now the home page.
+    return at.switch_page('pages/0_Stock_Selection.py').run()
 
 
 def demo(at):
