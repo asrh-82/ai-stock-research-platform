@@ -288,7 +288,20 @@ Nothing contained within this application should be considered financial or inve
 
 ## Kahala research and audited daily simulation
 
-Search **Kahala Brands** to select its explicitly labeled public parent, **MTY.TO**. The **Report** tab shows a reviewed evidence pack with source links, currency and fiscal-period labels, and unknown standalone Kahala figures. This pack is dated November 17, 2026; it is not an automatic universal filing parser.
+Open **Report**, enter a ticker or company name and choose **Generate report**. The checkbox adds a fixed price-pattern study and a downloadable trade ledger. The direct route `?research=Kahala%20Brands` opens research without loading market dashboards. Supported sources are MTY’s issuer index and domestic 10-K/10-Q filers with standard USD US GAAP data in SEC EDGAR. Exact company names and listed tickers are supported. Use a ticker for ambiguous share classes.
+
+MTY’s latest available annual ownership table establishes the Kahala relationship. Fresh reports fetch and compare issuer PDFs. US reports resolve the CIK, select the newest reporting period, and reconcile the SEC facts feed with the actual inline filing by accession, consolidated entity, dates, tag and unit. Each export records source URLs, retrieval times, file hashes and missing or conflicting figures. Single-source MTY measures are labeled. The original hand-reviewed Kahala case study is dated separately below the live report.
+
+Run the same pipeline from the command line:
+
+```bash
+uv sync --frozen
+uv run python -m Utils.filings "Kahala Brands" --with-study --output research_output/live
+uv run python -m Utils.filings "Kahala Brands" --replay research_output/live/filing-sources.zip --replay-prices research_output/live/market-study.zip --output research_output/replay
+uv run python -m Utils.filings AZO --output research_output/autozone
+```
+
+The CLI saves the generated Markdown, machine-readable evidence and a replayable archive of original filing bytes. A requested market study also saves the price snapshots and all selection trials. Use a new output folder for each run. The web and CLI need outbound access to the public sources. No language-model or SEC API key is required. Set `SEC_USER_AGENT` to your application name and monitored contact when hosting. Unsupported filing types, unresolved ownership and unavailable sources produce explicit coverage messages. Latest-period amendments require review. This workflow does not reconstruct the information available at arbitrary historical dates.
 
 The backtester now requires OHLCV and adjusted close, matching currencies and matching session dates. It uses completed-close signals, next-open fills, a reconciled cash ledger, proportional costs, a prior-volume capacity screen, and fresh-capital evaluation boundaries. Only long/cash strategies are supported. Adjusted economic units include vendor distribution adjustments; fills are not a broker execution record.
 

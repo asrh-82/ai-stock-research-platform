@@ -29,11 +29,17 @@ st.set_page_config(
 apply_styles()
 initialize_session_state()
 
+report_query = st.query_params.get("research")
+if report_query is not None:
+    st.markdown("[Open dashboard](./)")
+    render_research({"ticker": report_query[:160] or "AAPL"})
+    st.stop()
+
 active_ticker, period = render_sidebar()
 context = get_active_stock_context(active_ticker, period)
 
 if context is None:
-    st.error("Could not fetch stock data. Try another ticker or company search.")
+    st.error("Market data is unavailable. You can still generate a filing report below.")
     render_research({"ticker": active_ticker})
     st.stop()
 

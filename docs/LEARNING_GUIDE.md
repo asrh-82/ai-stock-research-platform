@@ -44,7 +44,7 @@ def basis_points_to_fraction(value: float) -> float:
 assert basis_points_to_fraction(10) == 0.001
 ```
 
-Exercise: write a function accepting price and number of shares, returning market capitalization. Reject missing, infinite or negative inputs. Test 36.38 times 22.841361 million. You should get approximately CAD830.9687 million. Explain why a stale share count makes that an illustration rather than a verified current market cap.
+Exercise: write a function accepting price and number of shares, returning market capitalization. Reject missing, infinite or negative inputs. Test 36.38 times 22.841361 million. You should get approximately CAD830.9687 million. Explain why quarterly weighted-average diluted shares only support an illustrative current equity value.
 
 Use a debugger or print one row at a time. Before asking why a large program fails, reduce the input until you have the smallest failing case. Read tracebacks from the last line upward to find the actual failure and then its caller.
 
@@ -249,3 +249,20 @@ These are primary documentation and research sources checked for this guide. Use
 - Bailey, Borwein, Lopez de Prado and Zhu, The Probability of Backtest Overfitting: https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf
 - MTY financial reports: https://mtygroup.com/en/financial-reports/
 - BlackRock XIU issuer page: https://www.blackrock.com/ca/investors/en/products/239832/ishares-sp-tsx-60-index-etf
+
+## Build the automatic filing workflow
+
+Start with a company you know. Run the following commands from the repository root with fresh output directories. The first command discovers AutoZone’s filing. The second rebuilds the report offline from the exact source documents the first command saved.
+
+```bash
+uv run python -m Utils.filings AZO --output research_output/azo
+uv run python -m Utils.filings AZO --replay research_output/azo/filing-sources.zip --output research_output/azo-replay
+```
+
+Open the first report and click the revenue link. Find the number on the filing, then open evidence.json. Match the filing accession in the URL, the start and end of the fiscal year, the USD unit and the tagged amount. A number displayed in millions has a scale of six. The program applies that scale before comparing the filing with the SEC facts feed. Two numbers with the same digits can refer to different periods, subsidiaries or units.
+
+Trace research_company in Utils/filings/pipeline.py. On the SEC path, select_filing chooses the financial period. parse_inline records the company, date range, unit and amount for each tagged fact. reconcile checks that exact combination against the regulator’s structured data. On the MTY path, discover reads the latest issuer index. The PDF reader checks the column dates and row titles before comparing the statement with the results release. The latest annual ownership table connects Kahala to MTY.
+
+Try the same command with "Kahala Brands" and the --with-study option. Find the current and noncurrent lease liabilities in the statement, add them by hand, then check the total against the lease note. Follow one simulated trade through its prior closing signal, opening fill, costs and sale in market-study.zip. The stock symbol comes from the resolved public issuer. Today’s filing figures never enter the earlier price signals.
+
+To practice a failure, change an amount in a small copy of the inline filing fixture in tests/test_filing_pipeline.py. Run that test and explain why the report withholds the figure. Your checkpoint is being able to distinguish an absent fact, a conflicting fact and a verified zero.

@@ -151,7 +151,7 @@
     {
       "id": "lease_current",
       "label": "Current lease liabilities",
-      "value": 99.24,
+      "value": 105.35,
       "unit": "CAD million",
       "period_end": "2026-08-30",
       "scope": "MTY consolidated",
@@ -168,7 +168,7 @@
     },
     {
       "id": "shares",
-      "label": "Reported share count used for illustration",
+      "label": "Quarterly weighted-average diluted shares used for illustration",
       "value": 22.841361,
       "unit": "million shares",
       "period_end": "2026-08-30",

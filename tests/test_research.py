@@ -24,7 +24,7 @@ def test_report_arithmetic_is_reproducible():
     assert m['trailing_eps_approx']==pytest.approx(4.79)
     assert m['trailing_fcf_approx_m']==pytest.approx(127.305)
     assert m['bank_debt_minus_cash_m']==pytest.approx(515.127)
-    assert m['lease_liabilities_m']==pytest.approx(469.214)
+    assert m['lease_liabilities_m']==pytest.approx(475.324)
 
 
 def test_historical_report_cannot_use_future_verification():
