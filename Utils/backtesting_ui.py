@@ -13,7 +13,13 @@ from Utils.backtesting import (
     build_stability_table,
     run_backtest,
 )
-from Utils.data_utils import get_price_history_cached
+from Utils.market_data import history_for_period
+from Utils.walk_forward import run_walk_forward
+
+
+@st.cache_data(ttl=3600)
+def get_backtest_history_cached(ticker, period):
+    return history_for_period(ticker, period)
 
 PERIOD_OPTIONS = {
     "1 year": "1y",
@@ -22,27 +28,6 @@ PERIOD_OPTIONS = {
     "10 years": "10y",
     "Maximum": "max",
 }
-
-
-def _extract_close(history: pd.DataFrame, label: str) -> pd.Series:
-    if history is None or history.empty:
-        raise ValueError(f"{label} price history is unavailable.")
-
-    if "Close" in history.columns:
-        close = history["Close"]
-        if isinstance(close, pd.DataFrame):
-            close = close.iloc[:, 0]
-        return close
-
-    if isinstance(history.columns, pd.MultiIndex):
-        for level in range(history.columns.nlevels):
-            if "Close" in history.columns.get_level_values(level):
-                close = history.xs("Close", axis=1, level=level)
-                if isinstance(close, pd.DataFrame):
-                    close = close.iloc[:, 0]
-                return close
-
-    raise ValueError(f"{label} history does not contain a closing-price series.")
 
 
 def _render_styles():
@@ -177,7 +162,7 @@ def render_backtesting(context):
     _render_styles()
     st.subheader("Strategy backtest")
     st.caption(
-        "Price-only strategies with next-period execution, explicit trading costs, and benchmark comparison."
+        "Completed-close signals, next-open execution, adjusted total returns and a cash ledger."
     )
 
     control_left, control_middle, control_right = st.columns([1.4, 0.8, 0.8])
@@ -197,7 +182,7 @@ def render_backtesting(context):
     with control_right:
         benchmark = st.text_input(
             "Benchmark",
-            value="SPY",
+            value="XIU.TO" if ticker.endswith(".TO") else "SPY",
             key=f"bt_benchmark_{ticker}",
         ).strip().upper()
 
@@ -211,6 +196,8 @@ def render_backtesting(context):
             rsi_window = 14
             rsi_entry = 30.0
             rsi_exit = 55.0
+            breakout_entry = 55
+            breakout_exit = 20
 
             if strategy == "SMA Crossover":
                 fast_window = st.number_input(
@@ -246,6 +233,9 @@ def render_backtesting(context):
                     step=0.5,
                     key=f"bt_momentum_threshold_{ticker}",
                 )
+            elif strategy == "Donchian Breakout":
+                breakout_entry = st.number_input("Breakout entry (sessions)", min_value=3, value=55, key=f"bt_breakout_entry_{ticker}")
+                breakout_exit = st.number_input("Breakout exit (sessions)", min_value=2, value=20, key=f"bt_breakout_exit_{ticker}")
             elif strategy == "RSI Mean Reversion":
                 rsi_window = st.number_input(
                     "RSI window (days)",
@@ -295,10 +285,14 @@ def render_backtesting(context):
                 "Slippage (bps)",
                 min_value=0.0,
                 max_value=1_000.0,
-                value=2.0,
+                value=10.0,
                 step=1.0,
                 key=f"bt_slippage_{ticker}",
             )
+
+            initial_capital = st.number_input("Starting capital (quote currency)", min_value=100.0, value=10000.0, key=f"bt_capital_{ticker}")
+            max_participation = st.number_input("Maximum prior daily dollar-volume (%)", min_value=0.01, max_value=100.0, value=1.0, key=f"bt_liquidity_{ticker}")
+            cash_rate = st.number_input("Cash interest (%)", min_value=-50.0, max_value=100.0, value=0.0, key=f"bt_cash_rate_{ticker}")
 
         with evaluation_column:
             evaluation_mode = st.selectbox(
@@ -332,10 +326,15 @@ def render_backtesting(context):
 
     period = PERIOD_OPTIONS[period_label]
     try:
-        asset_history = get_price_history_cached(ticker, period)
-        benchmark_history = get_price_history_cached(benchmark, period)
+        asset_history, asset_manifest = get_backtest_history_cached(ticker, period)
+        benchmark_history, benchmark_manifest = get_backtest_history_cached(benchmark, period)
         config = BacktestConfig(
             strategy=strategy,
+            breakout_entry=int(breakout_entry),
+            breakout_exit=int(breakout_exit),
+            initial_capital=float(initial_capital),
+            max_participation=float(max_participation)/100,
+            cash_rate=float(cash_rate)/100,
             fast_window=int(fast_window),
             slow_window=int(slow_window),
             momentum_lookback=int(momentum_lookback),
@@ -352,14 +351,19 @@ def render_backtesting(context):
             holdout_fraction=float(holdout_fraction),
         )
         result = run_backtest(
-            _extract_close(asset_history, ticker),
-            _extract_close(benchmark_history, benchmark),
+            asset_history,
+            benchmark_history,
             config,
+            asset_currency=asset_manifest["currency"],
+            benchmark_currency=benchmark_manifest["currency"],
         )
-    except (TypeError, ValueError) as error:
+    except Exception as error:
         st.error(f"The backtest could not be completed: {error}")
         return
 
+    st.caption(f"Currency: {asset_manifest['currency']} · Last complete session: {asset_manifest['last_session']} · Source: Yahoo Finance · Adjusted research units")
+    if ticker == "MTY.TO":
+        st.info("This tests MTY Food Group, the public parent of Kahala Brands. It cannot isolate Kahala stock returns.")
     strategy_metrics = result.strategy_metrics
     benchmark_metrics = result.benchmark_metrics
     st.markdown(
@@ -433,7 +437,7 @@ def render_backtesting(context):
             st.info("Not enough observations for a stability table.")
         else:
             st.dataframe(
-                stability,
+                stability.assign(**{c: stability[c]*100 for c in ["Strategy Return", "Benchmark Return", "Active Return"]}),
                 hide_index=True,
                 width="stretch",
                 column_config={
@@ -450,7 +454,7 @@ def render_backtesting(context):
             st.info("No trades were generated.")
         else:
             st.dataframe(
-                result.trades,
+                result.trades.assign(**{"Net Return": result.trades["Net Return"]*100}),
                 hide_index=True,
                 width="stretch",
                 column_config={
@@ -478,11 +482,33 @@ def render_backtesting(context):
         width="stretch",
     )
 
+    with st.expander("Orders and data provenance"):
+        st.dataframe(result.orders, hide_index=True)
+        st.json({"asset": asset_manifest, "benchmark": benchmark_manifest})
+        st.download_button("Download order audit CSV", result.orders.to_csv(index=False), f"{ticker}_orders.csv", "text/csv")
+
+    with st.expander("Chronological strategy study"):
+        st.write("Six fixed rules. Each 504-session training window selects the next 126-session validation rule. The final 252 sessions are excluded from selection. Requires roughly four years of data. Repeated tuning after viewing the final period contaminates the test.")
+        if st.button("Run fixed walk-forward study", key=f"wf_{ticker}"):
+            try:
+                from Utils.walk_forward import research_candidates
+                study = run_walk_forward(asset_history, benchmark_history, currency=asset_manifest["currency"], candidates=research_candidates(config))
+                st.write(f"Final rule selected using earlier data: {study['selected']}")
+                st.write(f"Final period net return: {study['holdout'].strategy_metrics.total_return:.2%}")
+                st.dataframe(study["folds"], hide_index=True)
+                st.download_button("Download all selection trials", study["trials"].to_csv(index=False), f"{ticker}_trials.csv", "text/csv")
+                st.caption(study["limitations"])
+            except Exception as error:
+                st.error(str(error))
+
     with st.expander("Methodology and bias controls"):
         st.markdown(
-            "Signals are calculated from each closing price and shifted one trading period before returns are applied. "
-            "Transaction costs and slippage are charged whenever the position changes. The benchmark uses the same aligned dates. "
-            "This version uses historical prices only; it does not use restated fundamentals. A single current ticker can still carry "
-            "survivorship and selection bias, and fixed-rule results do not replace walk-forward parameter testing."
+            "Signals use the completed prior close. Fills use the next adjusted open with adverse slippage and commission. "
+            "Cash and fixed fractional adjusted units are tracked explicitly. Dividends are already reflected in adjusted OHLC. "
+            "Each evaluation starts in cash and both strategy and benchmark pay entry and scheduled final-close exit costs. "
+            "Orders above 1% of prior 20-session dollar volume are rejected at the default settings. "
+            "No short selling, leverage, intraday fills, tax or payment-date dividend accounting is modeled. "
+            "Return tables display percentages; CSV returns are decimal fractions. Sharpe uses the selected constant risk-free rate. "
+            "Single-stock selection and repeated experiments still create bias; this is a research simulator, not a live-execution guarantee."
         )
-    st.caption("Educational historical analysis only. Backtest results are not investment recommendations.")
+    st.caption("Historical results do not establish a repeatable trading edge.")

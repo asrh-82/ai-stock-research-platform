@@ -61,13 +61,15 @@ The product is being developed toward an end-to-end research workflow with edita
 
 ### Strategy Backtesting
 
-- SMA crossover, price momentum, RSI mean reversion, and buy-and-hold rules
-- Next-period signal execution to prevent same-period look-ahead
-- Long/cash and long/short position rules
+- SMA crossover, price momentum, Wilder RSI mean reversion, Donchian breakout, and buy-and-hold rules
+- Previous-close signals with next-session adjusted-open execution
+- Long/cash positions with explicit cash and unit accounting
 - Daily, weekly, and monthly rebalancing
-- Transaction costs, slippage, benchmark comparison, and holdout evaluation
+- Transaction costs, adverse slippage, prior-volume capacity limits, and same-currency benchmark comparison
+- Chronological walk-forward selection, a final reserved test period, and complete candidate logs
 - Cumulative return, CAGR, volatility, Sharpe, Sortino, maximum drawdown, turnover, exposure, and trade statistics
-- Downloadable trade ledger and daily performance series
+- Downloadable trade and order ledgers, daily performance, and data provenance
+- Short selling is disabled until borrow availability, financing, and margin are modeled
 
 ### Research Scoring
 
@@ -283,3 +285,25 @@ No AI-generated investment recommendations are currently used within the platfor
 This project is intended for educational and research purposes only.
 
 Nothing contained within this application should be considered financial or investment advice.
+
+## Kahala research and audited daily simulation
+
+Search **Kahala Brands** to select its explicitly labeled public parent, **MTY.TO**. The **Report** tab shows a reviewed evidence pack with source links, currency and fiscal-period labels, and unknown standalone Kahala figures. This pack is dated November 17, 2026; it is not an automatic universal filing parser.
+
+The backtester now requires OHLCV and adjusted close, matching currencies and matching session dates. It uses completed-close signals, next-open fills, a reconciled cash ledger, proportional costs, a prior-volume capacity screen, and fresh-capital evaluation boundaries. Only long/cash strategies are supported. Adjusted economic units include vendor distribution adjustments; fills are not a broker execution record.
+
+Run the frozen study:
+
+```bash
+uv run python scripts/run_kahala_study.py --output research_output
+uv run python scripts/build_research_report.py --study research_output --output research_report
+```
+
+The second command also uses matplotlib to create the report chart. Install the optional report dependency with `uv run --with matplotlib python scripts/build_research_report.py --study research_output --output research_report` if it is not already installed. Markdown output is the portable source for PDF export.
+
+For exact reproduction, pass `--reuse /path/to/snapshot` to the study script. Keep its price CSVs and metadata files together. Research outputs contain data hashes, all selection trials, costs, closed trades, order audits and daily equity. Do not overwrite the frozen original while experimenting.
+
+- [Execution and evaluation methodology](docs/BACKTEST_METHODOLOGY.md)
+- [Learning guide and exercises](docs/LEARNING_GUIDE.md)
+
+Verification: `uv run --with pytest python -m pytest -q`. Tests cover hand-calculated cash flows, data and currency errors, future-data invariance, indicator edge cases and Streamlit controls. No claim of predictive accuracy follows from passing software tests.

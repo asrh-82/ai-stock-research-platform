@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import yfinance as yf
+from Utils.research import resolve_research_subject
 
 from Utils.scoring import (
     calculate_max_drawdown,
@@ -19,6 +20,10 @@ def search_company_symbols(query: str, max_results: int = 10):
 
     if not query:
         return []
+
+    known = resolve_research_subject(query)
+    if known:
+        return [known]
 
     results = []
 

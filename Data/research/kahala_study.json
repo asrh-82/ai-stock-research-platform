@@ -1,0 +1,87 @@
+{
+  "selected": "RSI 14 30/55",
+  "selected_config": {
+    "strategy": "RSI Mean Reversion",
+    "fast_window": 50,
+    "slow_window": 200,
+    "momentum_lookback": 126,
+    "momentum_threshold": 0.0,
+    "rsi_window": 14,
+    "rsi_entry": 30,
+    "rsi_exit": 55,
+    "breakout_entry": 55,
+    "breakout_exit": 20,
+    "rebalancing": "Daily",
+    "position_mode": "Long / Cash",
+    "transaction_cost_bps": 5,
+    "slippage_bps": 10,
+    "risk_free_rate": 0.0,
+    "cash_rate": 0.0,
+    "evaluation_mode": "Full History",
+    "holdout_fraction": 0.3,
+    "initial_capital": 10000,
+    "max_participation": 0.01,
+    "liquidate_at_end": true
+  },
+  "holdout_start": "2025-11-14",
+  "holdout_end": "2026-11-16",
+  "validation_metrics": {
+    "total_return": 0.3448349758138627,
+    "cagr": 0.04665755992491882,
+    "annualized_volatility": 0.22500400162625292,
+    "sharpe_ratio": 0.3157084106377773,
+    "sortino_ratio": 0.4706920507468342,
+    "maximum_drawdown": -0.42495857707674467
+  },
+  "holdout_metrics": {
+    "total_return": 0.18617435759349799,
+    "cagr": 0.18466192987392893,
+    "annualized_volatility": 0.16174900388061425,
+    "sharpe_ratio": 1.1318369391097998,
+    "sortino_ratio": 3.237487990109648,
+    "maximum_drawdown": -0.06779661421622862
+  },
+  "benchmark_metrics": {
+    "total_return": 0.23240972606931876,
+    "cagr": 0.23048668859337185,
+    "annualized_volatility": 0.12784379425251538,
+    "sharpe_ratio": 1.6989768667422083,
+    "sortino_ratio": 2.500959400165734,
+    "maximum_drawdown": -0.0765081975104216
+  },
+  "mty_buy_hold_metrics": {
+    "total_return": 0.11109931501573866,
+    "cagr": 0.1102249335594061,
+    "annualized_volatility": 0.3260473299810627,
+    "sharpe_ratio": 0.4830727936635847,
+    "sortino_ratio": 0.7735507556446327,
+    "maximum_drawdown": -0.29581655603441315
+  },
+  "holdout_trades": 3,
+  "holdout_closed_trades": 3,
+  "holdout_win_rate": 1.0,
+  "cash_interest": 0.0,
+  "costs": 101.35244886418192,
+  "ledger_reconciliation_error": 0.0,
+  "candidate_count": 6,
+  "walk_forward_folds": 13,
+  "trials_logged": 84,
+  "bootstrap": {
+    "annualized_arithmetic_active_mean": -0.03413015153528054,
+    "lower_95": -0.285485603329763,
+    "upper_95": 0.27700179767649125,
+    "block_sessions": 20,
+    "draws": 2000,
+    "seed": 42,
+    "interpretation": "Descriptive uncertainty, not a probability of profit; not adjusted for repeated research or all tried ideas."
+  },
+  "warnings": [
+    "Adjusted OHLC research units include vendor distribution adjustments. Ledger prices are not historical broker fills; do not add dividends again.",
+    "All-or-none fills use a prior 20-session dollar-volume limit, constant adverse slippage and proportional commission. Intraday depth, taxes and payment-date dividend cash flows are not modeled."
+  ],
+  "limitations": "Validation folds reset to fresh capital and liquidate at each boundary. Historical holdout was withheld from code selection, but is not a prospective live test. Re-running after changing rules invalidates its untouched status.",
+  "verified_on": "2026-11-17",
+  "currency": "CAD",
+  "asset": "MTY.TO",
+  "benchmark": "XIU.TO"
+}

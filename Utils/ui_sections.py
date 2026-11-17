@@ -288,6 +288,8 @@ def render_sidebar():
         period = st.selectbox("Chart Period", ["1mo", "3mo", "6mo", "1y", "2y", "5y"], index=3)
         st.divider()
         st.caption(f"Active: {st.session_state.active_ticker}")
+        if st.session_state.active_ticker == "MTY.TO":
+            st.info("Kahala Brands is an MTY subsidiary. Showing the public parent, quoted in CAD.")
         if st.button("Add Active Stock to Watchlist", use_container_width=True):
             added = add_to_watchlist(st.session_state.active_ticker)
             if added:
@@ -350,7 +352,7 @@ def render_header(context, app_name="Equity Research Platform"):
     )
 
     metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = st.columns(5)
-    metric_col1.metric("Price", f"${current_price:,.2f}" if current_price else "N/A")
+    metric_col1.metric(f"Price ({info.get('currency', 'unverified currency')})", f"${current_price:,.2f}" if current_price else "N/A")
     metric_col2.metric("Market Cap", format_large_number(info.get("marketCap")))
     metric_col3.metric("Forward P/E", info.get("forwardPE") if info.get("forwardPE") else "N/A")
     metric_col4.metric("Volatility", f"{context['volatility']}%" if context["volatility"] is not None else "N/A")

@@ -1,5 +1,6 @@
 import streamlit as st
 
+from Utils.research_ui import render_research
 from Utils.backtesting_ui import render_backtesting
 from Utils.dcf_ui import render_dcf
 from Utils.monte_carlo_ui import render_monte_carlo
@@ -33,6 +34,7 @@ context = get_active_stock_context(active_ticker, period)
 
 if context is None:
     st.error("Could not fetch stock data. Try another ticker or company search.")
+    render_research({"ticker": active_ticker})
     st.stop()
 
 render_header(context, APP_NAME)
@@ -40,6 +42,7 @@ render_header(context, APP_NAME)
 (
     dashboard_tab,
     analysis_tab,
+    report_tab,
     valuation_tab,
     monte_carlo_tab,
     backtest_tab,
@@ -49,6 +52,7 @@ render_header(context, APP_NAME)
     [
         "Dashboard",
         "Analysis",
+        "Report",
         "Valuation",
         "Monte Carlo",
         "Backtest",
@@ -62,6 +66,9 @@ with dashboard_tab:
 
 with analysis_tab:
     render_analysis(context)
+
+with report_tab:
+    render_research(context)
 
 with valuation_tab:
     render_dcf(context)

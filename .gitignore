@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Generated market snapshots and research runs
+research_output/
+research_report/
+.pytest_cache/
