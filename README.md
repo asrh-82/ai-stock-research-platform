@@ -61,13 +61,15 @@ The product is being developed toward an end-to-end research workflow with edita
 
 ### Strategy Backtesting
 
-- SMA crossover, price momentum, RSI mean reversion, and buy-and-hold rules
-- Next-period signal execution to prevent same-period look-ahead
-- Long/cash and long/short position rules
+- SMA crossover, price momentum, Wilder RSI mean reversion, Donchian breakout, and buy-and-hold rules
+- Previous-close signals with next-session adjusted-open execution
+- Long/cash positions with explicit cash and unit accounting
 - Daily, weekly, and monthly rebalancing
-- Transaction costs, slippage, benchmark comparison, and holdout evaluation
+- Transaction costs, adverse slippage, prior-volume capacity limits, and same-currency benchmark comparison
+- Chronological walk-forward selection, a final reserved test period, and complete candidate logs
 - Cumulative return, CAGR, volatility, Sharpe, Sortino, maximum drawdown, turnover, exposure, and trade statistics
-- Downloadable trade ledger and daily performance series
+- Downloadable trade and order ledgers, daily performance, and data provenance
+- Short selling is disabled until borrow availability, financing, and margin are modeled
 
 ### Research Scoring
 
@@ -283,3 +285,38 @@ No AI-generated investment recommendations are currently used within the platfor
 This project is intended for educational and research purposes only.
 
 Nothing contained within this application should be considered financial or investment advice.
+
+## Kahala research and audited daily simulation
+
+Open **Report**, enter a ticker or company name and choose **Generate report**. The checkbox adds a fixed price-pattern study and a downloadable trade ledger. The direct route `?research=Kahala%20Brands` opens research without loading market dashboards. Supported sources are MTY’s issuer index and domestic 10-K/10-Q filers with standard USD US GAAP data in SEC EDGAR. Exact company names and listed tickers are supported. Use a ticker for ambiguous share classes.
+
+MTY’s latest available annual ownership table establishes the Kahala relationship. Fresh reports fetch and compare issuer PDFs. US reports resolve the CIK, select the newest reporting period, and reconcile the SEC facts feed with the actual inline filing by accession, consolidated entity, dates, tag and unit. Each export records source URLs, retrieval times, file hashes and missing or conflicting figures. Single-source MTY measures are labeled. The original hand-reviewed Kahala case study is dated separately below the live report.
+
+Run the same pipeline from the command line:
+
+```bash
+uv sync --frozen
+uv run python -m Utils.filings "Kahala Brands" --with-study --output research_output/live
+uv run python -m Utils.filings "Kahala Brands" --replay research_output/live/filing-sources.zip --replay-prices research_output/live/market-study.zip --output research_output/replay
+uv run python -m Utils.filings AZO --output research_output/autozone
+```
+
+The CLI saves the generated Markdown, machine-readable evidence and a replayable archive of original filing bytes. A requested market study also saves the price snapshots and all selection trials. Use a new output folder for each run. The web and CLI need outbound access to the public sources. No language-model or SEC API key is required. Set `SEC_USER_AGENT` to your application name and monitored contact when hosting. Unsupported filing types, unresolved ownership and unavailable sources produce explicit coverage messages. Latest-period amendments require review. This workflow does not reconstruct the information available at arbitrary historical dates.
+
+The backtester now requires OHLCV and adjusted close, matching currencies and matching session dates. It uses completed-close signals, next-open fills, a reconciled cash ledger, proportional costs, a prior-volume capacity screen, and fresh-capital evaluation boundaries. Only long/cash strategies are supported. Adjusted economic units include vendor distribution adjustments; fills are not a broker execution record.
+
+Run the frozen study:
+
+```bash
+uv run python scripts/run_kahala_study.py --output research_output
+uv run python scripts/build_research_report.py --study research_output --output research_report
+```
+
+The second command also uses matplotlib to create the report chart. Install the optional report dependency with `uv run --with matplotlib python scripts/build_research_report.py --study research_output --output research_report` if it is not already installed. Markdown output is the portable source for PDF export.
+
+For exact reproduction, pass `--reuse /path/to/snapshot` to the study script. Keep its price CSVs and metadata files together. Research outputs contain data hashes, all selection trials, costs, closed trades, order audits and daily equity. Do not overwrite the frozen original while experimenting.
+
+- [Execution and evaluation methodology](docs/BACKTEST_METHODOLOGY.md)
+- [Learning guide and exercises](docs/LEARNING_GUIDE.md)
+
+Verification: `uv run --with pytest python -m pytest -q`. Tests cover hand-calculated cash flows, data and currency errors, future-data invariance, indicator edge cases and Streamlit controls. No claim of predictive accuracy follows from passing software tests.

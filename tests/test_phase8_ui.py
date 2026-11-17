@@ -36,7 +36,9 @@ def _price_history(ticker, _period):
     base_return = 0.00025 if ticker == "SPY" else 0.0004
     cycle = 0 if ticker == "SPY" else np.sin(np.arange(length) / 18) * 0.006
     returns = base_return + cycle
-    return pd.DataFrame({"Close": 100 * np.cumprod(1 + returns)}, index=index)
+    close = 100 * np.cumprod(1 + returns)
+    frame = pd.DataFrame({"Open":close, "High":close, "Low":close, "Close":close, "Adj Close":close, "Volume":1e7},index=index)
+    return frame, {"currency":"USD", "last_session":str(index[-1].date())}
 
 
 class PhaseEightInterfaceTests(unittest.TestCase):
@@ -88,7 +90,7 @@ class PhaseEightInterfaceTests(unittest.TestCase):
 
     def test_backtest_renders_and_strategy_control_recalculates(self):
         with patch(
-            "Utils.backtesting_ui.get_price_history_cached",
+            "Utils.backtesting_ui.get_backtest_history_cached",
             side_effect=_price_history,
         ):
             app = AppTest.from_function(_render_backtest_page).run(timeout=15)

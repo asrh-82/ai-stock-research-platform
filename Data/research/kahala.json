@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-17",
+  "subject": "Kahala Brands",
+  "standalone_public_stock": false,
+  "parent": "MTY Food Group Inc.",
+  "ticker": "MTY.TO",
+  "exchange": "Toronto Stock Exchange",
+  "currency": "CAD",
+  "sources": {
+    "acquisition": {
+      "title": "MTY completes acquisition of Kahala",
+      "url": "https://mtygroup.com/wp-content/uploads/2016/11/20160726-MTY-Acquisition-of-Kahala-Brands-EN-corrected.pdf",
+      "published_on": "2016-07-26",
+      "locator": "page 1"
+    },
+    "annual": {
+      "title": "MTY 2025 annual report",
+      "url": "https://mtygroup.com/wp-content/uploads/2026/03/COMP26_PRT_001_RAPPORT-ANNUEL_EN_DIGITAL_VERSION_MAR26.pdf",
+      "published_on": null,
+      "locator": "PDF pages 9, 19-21, 79"
+    },
+    "quarter": {
+      "title": "MTY Q3 2026 interim statements",
+      "url": "https://mtygroup.com/wp-content/uploads/2026/10/EN_08.30.2026-Financial-statements.pdf",
+      "published_on": "2026-10-09",
+      "locator": "PDF pages 2, 5-8, 15"
+    },
+    "release": {
+      "title": "MTY Q3 2026 earnings release",
+      "url": "https://mtygroup.com/wp-content/uploads/2026/10/EN_08.31.2026-MTY-Press-release.pdf",
+      "published_on": "2026-10-09",
+      "locator": "PDF pages 1-7"
+    },
+    "ceo": {
+      "title": "MTY CEO transition",
+      "url": "https://mtygroup.com/wp-content/uploads/2026/11/MTY-Announces-CEO-Leadership-Transition-EN.pdf",
+      "published_on": "2026-11-03",
+      "locator": "page 1"
+    },
+    "proposal": {
+      "title": "MTY response to public statements",
+      "url": "https://mtygroup.com/wp-content/uploads/2026/11/2026.11.03_Press-Release-EN.pdf",
+      "published_on": "2026-11-03",
+      "locator": "page 1"
+    },
+    "brands": {
+      "title": "Kahala brand portfolio",
+      "url": "https://www.kahalamgmt.com/brands/",
+      "published_on": null,
+      "locator": "brand directory"
+    },
+    "quote": {
+      "title": "MTY issuer quote cross-check",
+      "url": "https://mtygroup.com/en/",
+      "published_on": "2026-11-16",
+      "locator": "delayed CAD quote dated November 16"
+    },
+    "bidder_update": {
+      "title": "Foodtastic November 16 proposal update (bidder statement)",
+      "url": "https://www.businesswire.com/news/home/20261116632177/en/",
+      "published_on": "2026-11-16",
+      "locator": "company press release; claims attributed to bidder"
+    }
+  },
+  "facts": [
+    {
+      "id": "q3_revenue",
+      "label": "Revenue",
+      "value": 277.726,
+      "prior": 298.99,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "q3_income",
+      "label": "Net income attributable to owners",
+      "value": 24.755,
+      "prior": 27.875,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "q3_eps",
+      "label": "Diluted EPS",
+      "value": 1.08,
+      "prior": 1.22,
+      "unit": "CAD per share",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "q3_cfo",
+      "label": "Operating cash flow",
+      "value": 37.594,
+      "prior": 39.009,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "q3_fcf",
+      "label": "FCF after net lease payments (non-GAAP)",
+      "value": 28.475,
+      "prior": 25.819,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "release"
+    },
+    {
+      "id": "q3_ebitda",
+      "label": "Normalized adjusted EBITDA (non-GAAP)",
+      "value": 60.806,
+      "prior": 73.964,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "release"
+    },
+    {
+      "id": "cash",
+      "label": "Cash",
+      "value": 70.552,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "debt",
+      "label": "Long-term bank debt carrying value",
+      "value": 585.679,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "lease_current",
+      "label": "Current lease liabilities",
+      "value": 105.35,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "lease_noncurrent",
+      "label": "Noncurrent lease liabilities",
+      "value": 369.974,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "shares",
+      "label": "Quarterly weighted-average diluted shares used for illustration",
+      "value": 22.841361,
+      "unit": "million shares",
+      "period_end": "2026-08-30",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "fy_eps",
+      "label": "FY2025 diluted EPS",
+      "value": 5.18,
+      "unit": "CAD per share",
+      "period_end": "2025-11-30",
+      "scope": "MTY consolidated",
+      "source": "annual"
+    },
+    {
+      "id": "ytd_eps",
+      "label": "39-week 2026 diluted EPS",
+      "value": 3.38,
+      "prior": 3.77,
+      "unit": "CAD per share",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "quarter"
+    },
+    {
+      "id": "fy_fcf",
+      "label": "FY2025 FCF after net lease payments",
+      "value": 130.618,
+      "unit": "CAD million",
+      "period_end": "2025-11-30",
+      "scope": "MTY consolidated",
+      "source": "annual"
+    },
+    {
+      "id": "ytd_fcf",
+      "label": "39-week 2026 FCF after net lease payments",
+      "value": 89.655,
+      "prior": 92.968,
+      "unit": "CAD million",
+      "period_end": "2026-08-30",
+      "prior_period_end": "2025-08-31",
+      "scope": "MTY consolidated",
+      "source": "release"
+    },
+    {
+      "id": "quarter_dividend",
+      "label": "Declared quarterly dividend",
+      "value": 0.5,
+      "unit": "CAD per share",
+      "period_end": "2026-10-09",
+      "scope": "MTY consolidated",
+      "source": "release"
+    }
+  ],
+  "quote": {
+    "value": 36.38,
+    "currency": "CAD",
+    "session": "2026-11-16",
+    "source": "quote",
+    "kind": "dated reference quote, not a live quote"
+  },
+  "unknowns": [
+    "Current standalone Kahala revenue, EBITDA and cash flow are not separately established by these filings.",
+    "A Kahala-only quoted share price, market capitalization and historical stock-return series do not exist in this public-parent framework.",
+    "No current franchise-level traffic, renewal, royalty or closure dataset was available for Kahala alone.",
+    "No defensible standalone Kahala DCF or stock target can be generated from these inputs."
+  ]
+}
